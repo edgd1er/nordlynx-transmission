@@ -1,0 +1,16 @@
+[Interface]
+ListenPort = ${LISTEN_PORT:-51820}
+PrivateKey = ${PRIVATE_KEY}
+Address = ${ADDRESS:-10.5.0.2/32}
+PreUp = ${PRE_UP}
+PostUp = ${POST_UP}
+PreDown = ${PRE_DOWN}
+PostDown = ${POST_DOWN}
+PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+[Peer]
+Endpoint = ${EP_IP}
+PublicKey = ${PUBLIC_KEY}
+AllowedIPs = ${ALLOWED_IPS:-0.0.0.0/0}
+PersistentKeepalive = ${PERSISTENT_KEEP_ALIVE:-25}
