@@ -1,0 +1,22 @@
+name: lint dockerfile
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+      - main
+      - master
+    paths-ignore:
+      - '.github/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+      - name: hadolint
+        uses: hadolint/hadolint-action@v2.1.0
+        with:
+          dockerfile: ./Dockerfile
