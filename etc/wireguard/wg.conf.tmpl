@@ -2,12 +2,12 @@
 ListenPort = ${LISTEN_PORT:-51820}
 PrivateKey = ${PRIVATE_KEY}
 Address = ${ADDRESS:-10.5.0.2/32}
+DNS = ${DNS}
+Table = ${TABLE:-51820}
 PreUp = ${PRE_UP}
-PostUp = ${POST_UP}
 PreDown = ${PRE_DOWN}
-PostDown = ${POST_DOWN}
-PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-PostDown = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERAD
 
 [Peer]
 Endpoint = ${EP_IP}

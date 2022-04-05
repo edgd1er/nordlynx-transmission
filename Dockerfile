@@ -1,7 +1,7 @@
 FROM debian:bullseye-slim
 
 ARG aptcacher
-ARG VERSION=3.12.4
+ARG VERSION=3.12.5
 ARG TZ=America/Chicag
 
 LABEL maintainer="edgd1er <edgd1er@htomail.com>" \
@@ -23,7 +23,8 @@ WORKDIR /app
 #hadolint ignore=DL3018,DL3008
 RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
-    apt-get update && export DEBIAN_FRONTEND=non-interactive \
+    echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
+    && apt-get update && export DEBIAN_FRONTEND=non-interactive \
     && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
     ca-certificates tzdata dante-server net-tools unzip unrar-free bc tar \
     transmission transmission-common transmission-daemon transmission-cli vim tinyproxy \
@@ -31,7 +32,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     iproute2 iptables readline-common dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client \
     gpg-wks-server gpgconf gpgsm libassuan0 libksba8 libnpth0 libreadline8 libsqlite3-0 lsb-base pinentry-curses \
     # wireguard \
-    wireguard wireguard-tools \
+    wireguard-tools resolvconf\
     #ui start \
     && mkdir -p /opt/transmission-ui \
     && echo "Install Shift" \
@@ -59,6 +60,8 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     #transmission user
     && groupmod -g 1000 users && useradd -u 911 -U -d /config -s /bin/false abc && usermod -G users abc \
     && if [[ -n ${aptcacher} ]]; then rm /etc/apt/apt.conf.d/01proxy; fi \
+    # patch wg-quick script to remove the need for running in priviledge mode
+    && sed -i "s:sysctl -q net.ipv4.conf.all.src_valid_mark=1:echo skipping setting net.ipv4.conf.all.src_valid_mark:" /usr/bin/wg-quick \
     && cat /etc/tinyproxy/tinyproxy.conf
 
 COPY etc/ /etc/

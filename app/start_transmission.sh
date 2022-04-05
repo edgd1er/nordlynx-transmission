@@ -6,10 +6,10 @@ set -euo pipefail
 [[ ${TRANSMISSION_DEBUG} != "false" ]] && set -x || true
 
 #Vars
-dev=$(getVpnEth)
+dev=$(getVpnItf)
 container_ip=$(getEthIp)
 nordlynx_ip=$(getNordlynxIp)
-vpn_itf=$(getVpnEth)
+vpn_itf=$(getVpnItf)
 env_var_script=/app/transmission/environment-variables.sh
 
 #Functions
@@ -19,7 +19,15 @@ log() {
 }
 
 # Source our persisted env variables from container startup
-#. env_var_script
+#. env_var_scriptoi
+
+[[ -n ${TRANSMISSION_RPC_USERNAME} ]] && CREDS="-n \"${TRANSMISSION_RPC_USERNAME}:${TRANSMISSION_RPC_PASSWORD}\"" || CREDS=""
+while [ $(ps -ef |grep -c transmission-daemon ) -gt 1 ]
+do
+  transmission-remote http://${container_ip}:${TRANSMISSION_RPC_PORT} ${CREDS} --exit
+  sleep 1
+done
+unset CREDS
 
 # If transmission-pre-start.sh exists, run it
 SCRIPT=/etc/scripts/transmission-pre-start.sh
@@ -30,6 +38,13 @@ if [[ -x ${SCRIPT} ]]; then
   echo "${SCRIPT} returned $?"
 fi
 
+
+# Add containerIp to RPC_WHITELIST if missing
+if [[ ! ${TRANSMISSION_RPC_WHITELIST} =~ ${container_ip} ]]; then
+  dockerNet=$(echo ${container_ip} |grep -oP ".+\.")"*"
+  log "Adding ${dockerNet} to TRANSMISSION_RPC_WHITELIST (${TRANSMISSION_RPC_WHITELIST})"
+ TRANSMISSION_RPC_WHITELIST=${TRANSMISSION_RPC_WHITELIST},${dockerNet}
+fi
 # Persist transmission settings for use by transmission-daemon
 python3 /app/transmission/persistEnvironment.py ${env_var_script}
 
@@ -104,7 +119,7 @@ su --preserve-environment ${RUN_AS} -s /bin/bash -c "/usr/bin/transmission-daemo
 #TODO execute post start.
 # If transmission-post-start.sh exists, run it
 SCRIPT=/etc/scripts/transmission-post-start.sh
-if [[ -x ${SCRIPT} ]]; then
+if [[ -x ${SCRIPT}   ]]; then
   echo "Executing ${SCRIPT}"
   ${SCRIPT} "${USER_SCRIPT_ARGS[*]}"
   echo "${SCRIPT} returned $?"
