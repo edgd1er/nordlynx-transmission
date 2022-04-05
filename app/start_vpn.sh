@@ -3,6 +3,7 @@
 set -euo pipefail
 
 #Vars
+[[ ${NORDVPN_DEBUG:-false} == "true" ]] && set -x || true
 RDIR=/run/nordvpn
 DEBUG=${DEBUG:-false}
 COUNTRY=${COUNTRY:-''}
@@ -10,6 +11,7 @@ CONNECT=${CONNECT:-''}
 GROUP=${GROUP:-''}
 NOIPV6=${NOIPV6:-'off'}
 [[ -n ${COUNTRY} && -z ${CONNECT} ]] && CONNECT=${COUNTRY} && export CONNECT
+CONNECT=${CONNECT// /_}
 [[ "${GROUPID:-''}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
 [[ -n ${GROUP} ]] && GROUP="--group ${GROUP}"
 LOCALNET=$(hostname -i | grep -Eom1 "(^[0-9]{1,3}\.[0-9]{1,3})")
@@ -106,7 +108,8 @@ set_iptables DROP
 setTimeZone
 set_iptables ACCEPT
 
-if [ -e /run/secrets/NORDLYNX_PRIVKEY ]; then
+if [ -f /run/secrets/NORDVPN_PRIVKEY ]; then
+  log "INFO: NORDLYNX: private key found, going for wireguard."
   #Nordvpn has a fetch limit, storing json to prevent hitting the limit.
   export json_countries=$(curl -LSs ${nordvpn_api}/v1/servers/countries)
   export possible_country_codes="$(echo ${json_countries} | jq -r .[].code | tr '\n' ', ')"
@@ -131,6 +134,7 @@ if [ -e /run/secrets/NORDLYNX_PRIVKEY ]; then
   generateWireguardConf
   connectWireguardVpn
 else
+  log "INFO: NORDLYNX: no wireguard private key found, going for nordvpn client."
   nordlynxVpn
   extractLynxConf
 fi

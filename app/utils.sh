@@ -35,7 +35,7 @@ getCurrentWanIp() {
   curl -s 'https://api.ipify.org?format=json' | jq .ip
 }
 
-getVpnEth() {
+getVpnItf() {
   ip -j a | jq -r '.[].ifname | match("wg0|nordlynx|tun")| .string'
 }
 
@@ -47,7 +47,7 @@ generateDantedConf() {
   log "INFO: DANTE: set configuration socks proxy"
   SOURCE_DANTE_CONF=/etc/danted.conf.tmpl
   DANTE_CONF=/etc/dante.conf
-  INTERFACE=$(getVpnEth)
+  INTERFACE=$(getVpnItf)
   sed "s/INTERFACE/${INTERFACE}/" ${SOURCE_DANTE_CONF} >${DANTE_CONF}
   sed -i "s/DANTE_DEBUG/${DANTE_DEBUG}/" ${DANTE_CONF}
   [[ -n ${DANTE_LOGLEVEL} ]] && sed -i "s/log: DANTE_LOGLEVEL/log: ${DANTE_LOGLEVEL}/" ${DANTE_CONF}
@@ -77,11 +77,11 @@ generateTinyproxyConf() {
   #Allow only local network or all private address ranges
   if [[ -n ${LOCAL_NETWORK} ]]; then
     sed -i "s!#Allow LOCAL_NETWORK!Allow ${LOCAL_NETWORK}!" ${CONF}
-  else
-    sed -i 's!#Allow 10!Allow 10!' ${CONF}
-    sed -i 's!#Allow 172!Allow 172!' ${CONF}
-    sed -i 's!#Allow 192!Allow 192!' ${CONF}
   fi
+  NT=${INT_IP%%.*}
+  [[ 192 -eq ${NT} ]] && sed -i 's!#Allow 192!Allow 192!' ${CONF}
+  [[ 172 -eq ${NT} ]] && sed -i 's!#Allow 172!Allow 172!' ${CONF}
+  [[ 10 -eq ${NT} ]] && sed -i 's!#Allow 10!Allow 10!' ${CONF}
 
   [[ ${DEBUG:-false} ]] && grep -vE "(^#|^$)" ${CONF} || true
 }
@@ -100,7 +100,6 @@ extractLynxConf() {
 }
 
 nordlynxVpn() {
-
   #Use secrets if present
   #hide credentials even in debug
   set +x
@@ -164,7 +163,7 @@ nordlynxVpn() {
 country_filter() {
   local country=(${*//[;,]/ })
   if [[ ${#country[@]} -ge 1 ]]; then
-    country=${country[@]//_/ }
+    country=${country[@]// /_}
     local country_id=$(echo ${json_countries} | jq --raw-output ".[] | select( (.name|test(\"^${country}$\";\"i\")) or (.code|test(\"^${country}$\";\"i\")) ) | .id" | head -n 1)
   fi
   if [[ -n ${country_id} ]]; then
@@ -186,7 +185,7 @@ city_filter() {
     city=${city// /-}
     local city_id=$(echo ${json_countries} | jq --raw-output ".[].cities[]| select(.name|test(\"seattle\";\"i\")) |.id")
     if [[ -n ${city_id} ]]; then
-      log "Searching for city : ${city} (${city_id})"
+      log "found city : ${city} (${city_id})"
       echo "filters\[city_id\]=${city_id}&"
     else
       log "Warning, empty or invalid NORDVPN_CITY (value=${city}). Ignoring this parameter. Possible values are:${possible_city_names[*]}"
@@ -206,7 +205,7 @@ group_filter() {
                           .identifier" | head -n 1)
   fi
   if [[ -n ${identifier} ]]; then
-    log "Searching for group: ${identifier}"
+    log "found group: ${category} (${identifier})"
     echo "filters\[servers_groups\]\[identifier\]=${identifier}&"
   else
     log "Warning, empty or invalid GROUP (value=${1//--group /}). ignoring this parameter. Possible values are: ${possible_categories[*]}."
@@ -223,7 +222,7 @@ technologies_filter() {
                           .id" | head -n 1)
   fi
   if [[ -n ${identifier} ]]; then
-    log "Searching for group: ${identifier}"
+    log "found technology: ${technology} (${identifier})"
     echo "filters\[servers_technologies\]\[id\]=${identifier}&"
   else
     log "Warning, empty or invalid GROUP (value=${*}). ignoring this parameter. Possible values are: ${possible_technologies[*]}."
@@ -262,7 +261,7 @@ generateWireguardConf() {
   if [[ -z ${PUBLIC_KEY} ]]; then
     PUBLIC_KEY=$(jq -r '.technologies[] | select( .identifier == "wireguard_udp" ) | .metadata[] | select( .name == "public_key" ) | .value' <<<"${server}")
   fi
-  PRIVATE_KEY=$(cat /run/secrets/NORDLYNX_PRIVKEY)
+  PRIVATE_KEY=$(cat /run/secrets/NORDVPN_PRIVKEY)
   [[ -z ${PRIVATE_KEY} ]] && fatal_error "Error, cannot get wireguard private key"
   #Need LISTEN_PORT, PRIVATEKEY, PUBLICKEY, EP_IP, EP_PORT
   eval "echo \"$(cat /etc/wireguard/wg.conf.tmpl)\"" >/etc/wireguard/wg0.conf
@@ -280,7 +279,25 @@ connectWireguardVpn() {
   wg-quick up /etc/wireguard/wg0.conf
 }
 
-# Normal run functions
+iptableProtection(){
+  log "INFO: iptables: setting iptables."
+  #iptables -P INPUT ACCEPT
+  #iptables -P FORWARD ACCEPT
+  #iptables -L -P OUTPUT ACCEPT
+  #iptables -L -A INPUT -s 185.240.244.11/32 -i eth0 -j ACCEPT
+  #iptables -L -A INPUT -s 172.16.0.0/12 -i eth0 -j ACCEPT
+  #iptables -L -A INPUT -s 172.23.0.0/16 -i eth0 -j ACCEPT
+  #iptables -L -A INPUT -i eth0 -j DROP
+  #iptables -L -A OUTPUT -d 185.240.244.11/32 -o eth0 -j ACCEPT
+  #iptables -L -A OUTPUT -d 172.16.0.0/12 -o eth0 -j ACCEPT
+  #iptables -L -A OUTPUT -d 172.23.0.0/16 -o eth0 -j ACCEPT
+  #iptables -L -A OUTPUT -o eth0 -j DROP
+}
+
+
+########################
+# Normal run functions #
+########################
 log() {
   printf "%b\n" "$*" >/dev/stderr
 }

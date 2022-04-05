@@ -1,0 +1,5 @@
+nord*
+*.yml
+Makefile
+*.iml
+nordvpn_*
