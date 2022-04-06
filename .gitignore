@@ -1,3 +1,5 @@
 .idea/**
 /nordvpn_*
 /docker-compose.yml
+/your_config_path/
+/your_storage_path/

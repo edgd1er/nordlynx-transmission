@@ -1,13 +1,13 @@
-[![lint nordlynx proxy dockerfile](https://github.com/edgd1er/nordlynx-trans/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/edgd1er/nordvpn-proxy/actions/workflows/lint.yml)
+[![lint nordlynx transmission dockerfile](https://github.com/edgd1er/nordlynx-transmission/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/edgd1er/nordlynx-transmission/actions/workflows/lint.yml)
 
-[![build nordlynx proxy multi-arch images](https://github.com/edgd1er/nordlynx-trans/actions/workflows/buildPush.yml/badge.svg?branch=main)](https://github.com/edgd1er/nordvpn-proxy/actions/workflows/buildPush.yml)
+[![build multi-arch images](https://github.com/edgd1er/nordlynx-transmission/actions/workflows/buildPush.yml/badge.svg?branch=main)](https://github.com/edgd1er/nordlynx-transmission/actions/workflows/buildPush.yml)
 
-![Docker Size](https://badgen.net/docker/size/edgd1er/nordlynx-trans?icon=docker&label=Size)
-![Docker Pulls](https://badgen.net/docker/pulls/edgd1er/nordlynx-trans?icon=docker&label=Pulls)
-![Docker Stars](https://badgen.net/docker/stars/edgd1er/nordlynx-trans?icon=docker&label=Stars)
-![ImageLayers](https://badgen.net/docker/layers/edgd1er/nordlynx-trans?icon=docker&label=Layers)
+![Docker Size](https://badgen.net/docker/size/edgd1er/nordlynx-transmission?icon=docker&label=Size)
+![Docker Pulls](https://badgen.net/docker/pulls/edgd1er/nordlynx-transmission?icon=docker&label=Pulls)
+![Docker Stars](https://badgen.net/docker/stars/edgd1er/nordlynx-transmission?icon=docker&label=Stars)
+![ImageLayers](https://badgen.net/docker/layers/edgd1er/nordlynx-transmission?icon=docker&label=Layers)
 
-# nordlynx-trans
+# nordlynx-transmission
 
 /!\ please consider this project as a work in progress especially concerning iptables management. 
 

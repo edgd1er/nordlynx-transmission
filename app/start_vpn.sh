@@ -4,7 +4,6 @@ set -euo pipefail
 
 #Vars
 [[ ${NORDVPN_DEBUG:-false} == "true" ]] && set -x || true
-RDIR=/run/nordvpn
 DEBUG=${DEBUG:-false}
 COUNTRY=${COUNTRY:-''}
 CONNECT=${CONNECT:-''}
@@ -50,59 +49,11 @@ setIPV6() {
   sysctl -p || true
 }
 
-checkLatest() {
-  CANDIDATE=$(curl --retry 3 -LSs "https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/" | grep -oP "NordVPN \K[0-9]\.[0-9.-]{1,4}" | head -1)
-  VERSION=$(dpkg-query --showformat='${Version}' --show nordvpn) || true
-  [[ -z ${VERSION} ]] && VERSION=$(apt-cache show nordvpn | grep -oP "(?<=Version: ).+") || true
-  if [[ ${VERSION} =~ ${CANDIDATE} ]]; then
-    log "INFO: No update needed for nordvpn (${VERSION})"
-  else
-    log "**********************************************************************"
-    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
-    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
-    log "**********************************************************************"
-  fi
-}
-
-checkLatestApt() {
-  apt-get update
-  VERSION=$(apt-cache policy nordvpn | grep -oP "Installed: \K.+")
-  CANDIDATE=$(apt-cache policy nordvpn | grep -oP "Candidate: \K.+")
-  CANDIDATE=${CANDIDATE:-${VERSION}}
-  if [[ ${CANDIDATE} != ${VERSION} ]]; then
-    log "**********************************************************************"
-    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
-    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
-    log "**********************************************************************"
-  else
-    log "INFO: No update needed for nordvpn (${VERSION})"
-  fi
-}
-
-#embedded in nordvpn client but not efficient in container. done in docker-compose
-#setIPV6 ${NOIPV6}
-
-setup_nordvpn() {
-  nordvpn set technology ${TECHNOLOGY:-'NordLynx'}
-  nordvpn set cybersec ${CYBER_SEC:-'off'}
-  nordvpn set killswitch ${KILLERSWITCH:-'on'}
-  nordvpn set ipv6 ${NOIPV6} 2>/dev/null
-  [[ -n ${DNS:-''} ]] && nordvpn set dns ${DNS//[;,]/ }
-  [[ -z ${DOCKER_NET:-''} ]] && DOCKER_NET="$(hostname -i | grep -Eom1 "^[0-9]{1,3}\.[0-9]{1,3}").0.0/12"
-  nordvpn whitelist add subnet ${DOCKER_NET}
-  [[ -n ${NETWORK:-''} ]] && for net in ${NETWORK//[;,]/ }; do nordvpn whitelist add subnet ${net}; done
-  [[ -n ${PORTS:-''} ]] && for port in ${PORTS//[;,]/ }; do nordvpn whitelist add port ${port}; done
-  [[ ${DEBUG} ]] && nordvpn -version && nordvpn settings
-  nordvpn whitelist add subnet ${LOCALNET}.0.0/16
-}
-
 #Main
 #Overwrite docker dns as it may fail with specific configuration (dns on server)
 echo "nameserver 1.1.1.1" >/etc/resolv.conf
-checkLatest
-[[ 0 -ne $? ]] && checkLatestApt
+
 [[ -z ${CONNECT} ]] && exit 1
-[[ ! -d ${RDIR} ]] && mkdir -p ${RDIR}
 
 set_iptables DROP
 setTimeZone
@@ -120,8 +71,8 @@ if [ -f /run/secrets/NORDVPN_PRIVKEY ]; then
   export possible_groups="$(echo ${json_groups} | jq -r '[.[].title] | @csv' | tr -d '\"')"
   # technology
   export json_technologies=$(curl -LSs ${nordvpn_api}/v1/technologies)
-  export possible_technologies=$(echo ${json_technologies} | jq -r '.[].name |@csv'| tr -d '\"')
-  export possible_technologies_id=$(echo ${json_technologies} | jq -r '.[].identifier |@csv'| tr -d '\"')
+  export possible_technologies=$(echo ${json_technologies} | jq -r '[.[].name] | @csv'| tr -d '\"')
+  export possible_technologies_id=$(echo ${json_technologies} | jq -r '[.[].identifier] |@csv'| tr -d '\"')
   log "Checking NORDPVN API responses"
   for po in json_countries json_groups json_technologies; do
     if [[ $(echo ${!po} | grep -c "<html>") -gt 0 ]]; then
@@ -131,12 +82,14 @@ if [ -f /run/secrets/NORDVPN_PRIVKEY ]; then
       exit
     fi
   done
+  if [[ ! -s /etc/resolv.conf ]]; then
+    rm -f /etc/resolv.conf
+    ln -s /run/resolvconf/resolv.conf /etc/resolv.conf
+  fi
   generateWireguardConf
   connectWireguardVpn
 else
-  log "INFO: NORDLYNX: no wireguard private key found, going for nordvpn client."
-  nordlynxVpn
-  extractLynxConf
+  log "Error: NORDLYNX: no wireguard private key found, exiting."
 fi
 
 log "INFO: current WAN IP: $(getCurrentWanIp)"
