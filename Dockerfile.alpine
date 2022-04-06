@@ -2,15 +2,15 @@ FROM debian:bullseye-slim
 
 ARG aptcacher
 ARG VERSION=3.12.5
-ARG TZ=America/Chicago
+ARG TZ=America/Chicag
 
 LABEL maintainer="edgd1er <edgd1er@htomail.com>" \
       org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="nordlynx-transmission" \
-      org.label-schema.description="Provides VPN through NordVpn application or plain wireguard." \
-      org.label-schema.url="https://hub.docker.com/r/edgd1er/nordlynx-transmission" \
+      org.label-schema.description="Provides VPN through NordVpn application." \
+      org.label-schema.url="https://hub.docker.com/r/edgd1er/nordlynx-proxy" \
       org.label-schema.vcs-ref=$VCS_REF \
-      org.label-schema.vcs-url="https://github.com/edgd1er/nordlynx-transmission" \
+      org.label-schema.vcs-url="https://github.com/edgd1er/nordlynx-proxy" \
       org.label-schema.version=$VERSION \
       org.label-schema.schema-version="1.0"
 
@@ -65,8 +65,8 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && sed -i "s:sysctl -q net.ipv4.conf.all.src_valid_mark=1:echo skipping setting net.ipv4.conf.all.src_valid_mark:" /usr/bin/wg-quick \
     && cat /etc/tinyproxy/tinyproxy.conf
 
-COPY --chmod=755 etc/ /etc/
-COPY --chmod=755 app/ /app/
+COPY etc/ /etc/
+COPY app/ /app/
 
 HEALTHCHECK --interval=5m --timeout=20s --start-period=1m CMD /app/healthcheck.sh
 
