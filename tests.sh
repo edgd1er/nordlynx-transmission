@@ -51,8 +51,8 @@ done
 myIp=$(curl -m5 -sq https://ifconfig.me/ip)
 
 vpnIP=$(curl -m5 -sx http://${PROXY_HOST}:${HTTP_PORT} "https://ifconfig.me/ip")
-if [[ $? -eq 0 ]] && [[ ${myIp} == ${vpnIP} ]]; then
-  echo "http proxy: IP is ${IP}, mine is ${myIp}"
+if [[ $? -eq 0 ]] && [[ ${myIp} != ${vpnIP} ]] && [[ ${#vpnIP} -gt 0 ]]; then
+  echo "http proxy: IP is ${vpnIP}, mine is ${myIp}"
 else
   echo "Error, curl through http proxy to https://ifconfig.me/ip failed"
   echo "or IP (${myIp}) == vpnIP (${vpnIP})"
@@ -61,7 +61,7 @@ fi
 
 #check detected ips
 vpnIP=$(curl -m5 -sqx socks5://${PROXY_HOST}:${SOCK_PORT} "https://ifconfig.me/ip")
-if [[ $? -eq 0 ]] && [[ ${myIp} == ${vpnIP} ]]; then
+if [[ $? -eq 0 ]] && [[ ${myIp} != ${vpnIP} ]] && [[ ${#vpnIP} -gt 0 ]]; then
   echo "socks proxy: IP is ${vpnIP}, mine is ${myIp}"
 else
   echo "Error, curl through socks proxy to https://ifconfig.me/ip failed"

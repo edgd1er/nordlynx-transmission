@@ -97,6 +97,7 @@ extractLynxConf() {
   wg showconf nordlynx >/etc/wireguard/wg0.conf
   chmod 600 /etc/wireguard/wg0.conf
   log "Wireguard configuration written to /etc/wireguard/wg0.conf"
+  cat /etc/wireguard/wg0.conf
 }
 
 nordlynxVpn() {
