@@ -100,7 +100,11 @@ services:
     devices:
       - /dev/net/tun
     sysctls:
-      - net.ipv6.conf.all.disable_ipv6=1 # disable ipv6
+        - net.ipv4.conf.all.src_valid_mark=1 # remove need to have privilegied
+        - net.ipv4.ip_forward=1
+        - net.ipv4.conf.all.rp_filter=2 # Loose Reverse Path: https://access.redhat.com/solutions/53031
+        - net.ipv6.conf.all.disable_ipv6=1 # disable ipv6
+        - net.ipv6.conf.all.forwarding=1
       #      - net.ipv4.conf.all.rp_filter=2 # Loose Reverse Path: https://access.redhat.com/solutions/53031
     cap_add:
       - NET_ADMIN               # Required

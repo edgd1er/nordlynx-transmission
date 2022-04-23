@@ -2,14 +2,14 @@
 ListenPort = ${LISTEN_PORT:-51820}
 PrivateKey = ${PRIVATE_KEY}
 Address = ${ADDRESS:-10.5.0.2/32}
+FwMark = ${FWMARK}
 #DNS = ${DNS}
-Table = ${TABLE:-51820}
-PreUp = ${PRE_UP}
-PreDown = ${PRE_DOWN}
-#PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-PostUp = /etc/wireguard/helpers/add-nat.sh
-#PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERAD
-PostDown = /etc/wireguard/helpers/remove-nat.sh
+Table = ${TABLE}
+#PostUp = /etc/wireguard/helpers/add-nat.sh
+#PreDown = /etc/wireguard/helpers/remove-nat.sh
+PreDown = supervisorctl stop transmission
+PreDown = supervisorctl stop dante
+PreDown = supervisorctl stop tinyproxy
 
 [Peer]
 Endpoint = ${EP_IP}

@@ -110,33 +110,14 @@ echo "nameserver 1.1.1.1" >/etc/resolv.conf
 
 [[ -z ${CONNECT} ]] && exit 1
 
+UNP_IP=$(getCurrentWanIp)
 set_iptables DROP
 setTimeZone
 set_iptables ACCEPT
 
 if [ -f /run/secrets/NORDVPN_PRIVKEY ]; then
   log "INFO: NORDLYNX: private key found, going for wireguard."
-  #Nordvpn has a fetch limit, storing json to prevent hitting the limit.
-  export json_countries=$(curl -LSs ${nordvpn_api}/v1/servers/countries)
-  export possible_country_codes="$(echo ${json_countries} | jq -r .[].code | tr '\n' ', ')"
-  export possible_country_names="$(echo ${json_countries} | jq -r .[].name | tr '\n' ', ')"
-  export possible_city_names="$(echo ${json_countries} | jq -r .[].cities[].name | tr '\n' ', ')"
-  # groups used for CATEGORY
-  export json_groups=$(curl -LSs ${nordvpn_api}/v1/servers/groups)
-  export possible_groups="$(echo ${json_groups} | jq -r '[.[].title] | @csv' | tr -d '\"')"
-  # technology
-  export json_technologies=$(curl -LSs ${nordvpn_api}/v1/technologies)
-  export possible_technologies=$(echo ${json_technologies} | jq -r '[.[].name] | @csv'| tr -d '\"')
-  export possible_technologies_id=$(echo ${json_technologies} | jq -r '[.[].identifier] |@csv'| tr -d '\"')
-  log "Checking NORDPVN API responses"
-  for po in json_countries json_groups json_technologies; do
-    if [[ $(echo ${!po} | grep -c "<html>") -gt 0 ]]; then
-      msg=$(echo ${!po} | grep -oP "(?<=title>)[^<]+")
-      echo "ERROR, unexpected html content from NORDVPN servers: ${msg}"
-      sleep 30
-      exit
-    fi
-  done
+  getJsonFromNordApi
   if [[ ! -s /etc/resolv.conf ]]; then
     rm -f /etc/resolv.conf
     ln -s /run/resolvconf/resolv.conf /etc/resolv.conf
@@ -149,7 +130,7 @@ else
   extractLynxConf
 fi
 
-log "INFO: current WAN IP: $(getCurrentWanIp)"
+log "INFO: current WAN IP: $(getCurrentWanIp) / unprotected ip: ${UNP_IP}"
 
 #prevent leak through default route
 if [[ "true" = "$DROP_DEFAULT_ROUTE" ]] && [[ -n ${route_net_gateway} ]]; then
@@ -159,8 +140,8 @@ if [[ "true" = "$DROP_DEFAULT_ROUTE" ]] && [[ -n ${route_net_gateway} ]]; then
 fi
 
 #connected
-status=$( curl -m 10 -s https://api.nordvpn.com/vpn/check/full | jq -r '.["status"]' )
-if [[ ${status,,} == "unprotected" ]];then
+status=$(getVpnProtectionStatus)
+if [[ ${status,,} == "unprotected" ]]; then
   echo "Error, status: ${status}"
   exit 1
 fi

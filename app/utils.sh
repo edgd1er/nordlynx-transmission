@@ -35,6 +35,10 @@ getCurrentWanIp() {
   curl -s 'https://api.ipify.org?format=json' | jq .ip
 }
 
+getVpnProtectionStatus(){
+  curl -m 10 -s https://api.nordvpn.com/vpn/check/full | jq -r '.["status"]'
+}
+
 getVpnItf() {
   ip -j a | jq -r '.[].ifname | match("wg0|nordlynx|tun")| .string'
 }
@@ -52,7 +56,7 @@ generateDantedConf() {
   sed -i "s/DANTE_DEBUG/${DANTE_DEBUG}/" ${DANTE_CONF}
   [[ -n ${DANTE_LOGLEVEL} ]] && sed -i "s/log: DANTE_LOGLEVEL/log: ${DANTE_LOGLEVEL}/" ${DANTE_CONF}
   [[ -n ${DANTE_ERRORLOG} ]] && sed -i "s#errorlog: /dev/null#errorlog: ${DANTE_ERRORLOG}#" ${DANTE_CONF}
-
+  [[ 0 -ne ${DANTE_DEBUG} ]] && cat ${DANTE_CONF}
   log "INFO: DANTE: check configuration socks proxy"
   danted -Vf ${DANTE_CONF}
 }
@@ -88,6 +92,31 @@ generateTinyproxyConf() {
 ####################
 # NORDVPN specific #
 ####################
+
+getJsonFromNordApi(){
+  #Nordvpn has a fetch limit, storing json to prevent hitting the limit.
+    export json_countries=$(curl -LSs ${nordvpn_api}/v1/servers/countries)
+    export possible_country_codes="$(echo ${json_countries} | jq -r .[].code | tr '\n' ', ')"
+    export possible_country_names="$(echo ${json_countries} | jq -r .[].name | tr '\n' ', ')"
+    export possible_city_names="$(echo ${json_countries} | jq -r .[].cities[].name | tr '\n' ', ')"
+    # groups used for CATEGORY
+    export json_groups=$(curl -LSs ${nordvpn_api}/v1/servers/groups)
+    export possible_groups="$(echo ${json_groups} | jq -r '[.[].title] | @csv' | tr -d '\"')"
+    # technology
+    export json_technologies=$(curl -LSs ${nordvpn_api}/v1/technologies)
+    export possible_technologies=$(echo ${json_technologies} | jq -r '[.[].name] | @csv' | tr -d '\"')
+    export possible_technologies_id=$(echo ${json_technologies} | jq -r '[.[].identifier] |@csv' | tr -d '\"')
+    log "Checking NORDPVN API responses"
+    for po in json_countries json_groups json_technologies; do
+      if [[ $(echo ${!po} | grep -c "<html>") -gt 0 ]]; then
+        msg=$(echo ${!po} | grep -oP "(?<=title>)[^<]+")
+        echo "ERROR, unexpected html content from NORDVPN servers: ${msg}"
+        sleep 30
+        exit
+      fi
+    done
+}
+
 
 getNordlynxIp() {
   ip -j a | jq -r '.[] |select((.ifname|test("wg0";"i")) or (.ifname|test("nordlynx";"i")) or (.ifname|test("tun";"i")) ) | .addr_info[].local'
@@ -164,7 +193,7 @@ nordlynxVpn() {
 country_filter() {
   local country=(${*//[;,]/ })
   if [[ ${#country[@]} -ge 1 ]]; then
-    country=${country[@]// /_}
+    country=${country[@]//_/ }
     local country_id=$(echo ${json_countries} | jq --raw-output ".[] | select( (.name|test(\"^${country}$\";\"i\")) or (.code|test(\"^${country}$\";\"i\")) ) | .id" | head -n 1)
   fi
   if [[ -n ${country_id} ]]; then
@@ -234,6 +263,7 @@ technologies_filter() {
 # Wireguard specific #
 ######################
 
+
 installWireguardPackage() {
   apt-get update && apt-get install -y --no-install-recommended wireguard wireguard-tools
 }
@@ -262,11 +292,13 @@ generateWireguardConf() {
   if [[ -z ${PUBLIC_KEY} ]]; then
     PUBLIC_KEY=$(jq -r '.technologies[] | select( .identifier == "wireguard_udp" ) | .metadata[] | select( .name == "public_key" ) | .value' <<<"${server}")
   fi
+  set +x
   PRIVATE_KEY=$(cat /run/secrets/NORDVPN_PRIVKEY)
   [[ -z ${PRIVATE_KEY} ]] && fatal_error "Error, cannot get wireguard private key"
-  #Need LISTEN_PORT, PRIVATEKEY, PUBLICKEY, EP_IP, EP_PORT
+  [[ ${NORDVPN_DEBUG,,} == true ]] && set -x || true
+  #Need LISTEN_PORT, PRIVATEKEY, PUBLICKEY, EP_IP, EP_PORT, Address
   eval "echo \"$(cat /etc/wireguard/wg.conf.tmpl)\"" >/etc/wireguard/wg0.conf
-  cat /etc/wireguard/wg0.conf
+  # cannot install resolconfctl in docker, workaround
   if [[ -n ${DNS} ]]; then
     echo >/etc/resolv.conf
     for d in ${DNS}; do
@@ -278,6 +310,7 @@ generateWireguardConf() {
 connectWireguardVpn() {
   chmod 600 /etc/wireguard/wg0.conf
   wg-quick up /etc/wireguard/wg0.conf
+  wg show wg0
 }
 
 iptableProtection(){
