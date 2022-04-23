@@ -15,8 +15,12 @@ lint: ## stop all containers
 	docker run -i --rm hadolint/hadolint < Dockerfile
 
 build: ## build image
-	@echo "build image ..."
+	@echo "build image with nordvpn client..."
 	docker-compose build
+
+buildnoclient: ## build image without nordvpn client
+	@echo "build image without nordvpn client"
+	docker buildx build --build-arg aptcacher=192.168.53.208 --build-arg NORDVPN_INSTALL=0 -f ./Dockerfile -t edgd1er/nordguard-transmission  .
 
 run:
 	@echo "run container"

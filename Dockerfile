@@ -1,8 +1,9 @@
 FROM debian:bullseye-slim
 
-ARG aptcacher
+ARG aptcacher=''
 ARG VERSION=3.12.5
 ARG TZ=America/Chicago
+ARG NORDVPNCLIENT_INSTALLED=1
 
 LABEL maintainer="edgd1er <edgd1er@htomail.com>" \
       org.label-schema.build-date=$BUILD_DATE \
@@ -23,17 +24,19 @@ WORKDIR /app
 #hadolint ignore=DL3018,DL3008
 RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
+    echo -e "alias checkip='curl -sm10 \"https://zx2c4.com/ip\";\n'\nalias checkhttp='curl -sm 10 -x http://0.0.0.0:${WEBPROXY_PORT} \"https://ifconfig.me/ip\";\n'\nalias checksocks='curl -x http://0.0.0.0:1080 \"https://ifconfig.me/ip\";\n'" >> ~/.bash_aliases\
+    echo -e "alias checkvpn='curl -m 10 -s https://api.nordvpn.com/vpn/check/full | jq -r \'.[\"status\"]\';\n"  >> ~/.bash_aliases \
     # allow to install resolvconf
     echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
     && apt-get update && export DEBIAN_FRONTEND=non-interactive \
     && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
     ca-certificates tzdata dante-server net-tools unzip unrar-free bc tar \
-    transmission transmission-common transmission-daemon transmission-cli vim tinyproxy \
+    transmission transmission-common transmission-daemon transmission-cli vim tinyproxy ufw iputils-ping \
     # nordvpn requirements \
     iproute2 iptables readline-common dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client \
     gpg-wks-server gpgconf gpgsm libassuan0 libksba8 libnpth0 libreadline8 libsqlite3-0 lsb-base pinentry-curses \
     # wireguard \
-    wireguard-tools resolvconf\
+    wireguard-tools \
     #ui start \
     && mkdir -p /opt/transmission-ui \
     && echo "Install Shift" \
@@ -61,7 +64,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     #transmission user
     && groupmod -g 1000 users && useradd -u 911 -U -d /config -s /bin/false abc && usermod -G users abc \
     && if [[ -n ${aptcacher} ]]; then rm /etc/apt/apt.conf.d/01proxy; fi \
-    # patch wg-quick script to remove the need for running in priviledge mode
+    # patch wg-quick script to remove the need for running in privilegied mode
     && sed -i "s:sysctl -q net.ipv4.conf.all.src_valid_mark=1:echo skipping setting net.ipv4.conf.all.src_valid_mark:" /usr/bin/wg-quick \
     && cat /etc/tinyproxy/tinyproxy.conf
 
@@ -102,6 +105,8 @@ ENV GLOBAL_APPLY_PERMISSIONS=true \
     PRIVATE_KEY='' \
     PUBLIC_KEY='' \
     ALLOWED_IPS='' \
+    TABLE=auto \
+    FWMARK=0x1fe1 \
     PERSISTENT_KEEP_ALIVE=25 \
     DNS="103.86.96.100, 103.86.99.100" \
     PRE_UP='' \
