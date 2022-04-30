@@ -18,11 +18,12 @@ buildAndWait() {
   docker compose -f docker-compose.yml up -d --build
   echo "Waiting for the container to be up.(every ${INTERVAL} sec)"
   logs=""
-  while [ 0 -eq $(echo $logs | grep -c "Initialization Sequence Completed") ]; do
+#  while [ 0 -eq $(echo $logs | grep -c "Initialization Sequence Completed") ]; do
+  while [ 0 -eq $(echo $logs | grep -c "exited: start_vpn (exit status 0; expected") ]; do
     logs="$(docker compose logs)"
     sleep ${INTERVAL}
     ((n++))
-    echo "loop: ${n}"
+    echo "loop: ${n}: $(docker compose logs | tail -1)"
     [[ ${n} -eq 15 ]] && break || true
   done
   docker compose logs

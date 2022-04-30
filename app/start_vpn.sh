@@ -124,10 +124,13 @@ if [ -f /run/secrets/NORDVPN_PRIVKEY ]; then
   fi
   generateWireguardConf
   connectWireguardVpn
-else
+elif [[ ${NORDVPNCLIENT_INSTALLED} -eq 1 ]]; then
   log "Info: NORDLYNX: no wireguard private key found, connecting with nordvpn client."
   nordlynxVpn
   extractLynxConf
+else
+  log "Error: NORDLYNX: no nordvpn client, no wireguard private key, exiting."
+  exit
 fi
 
 log "INFO: current WAN IP: $(getCurrentWanIp) / unprotected ip: ${UNP_IP}"
