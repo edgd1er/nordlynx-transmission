@@ -20,6 +20,9 @@ DANTE_LOGLEVEL=${DANTE_LOGLEVEL//\"/}
 DANTE_ERRORLOG=${DANTE_ERRORLOG//\"/}
 
 export nordvpn_api="https://api.nordvpn.com"
+jsonAll=$(curl -LSs "${nordvpn_api}/v1/servers?limit=9999999")
+#jsonAll=$(curl -LSs "${nordvpn_api}/v1/servers?limit=1000")
+jsonOne=$(echo $jsonAll | jq '[.[1]]')
 
 fatal_error() {
   #printf "${TIME_FORMAT} \e[41mERROR:\033[0m %b\n" "$*" >&2
@@ -115,6 +118,7 @@ getJsonFromNordApi(){
         exit
       fi
     done
+    log "End checking NORDPVN API responses"
 }
 
 
@@ -129,7 +133,7 @@ extractLynxConf() {
   cat /etc/wireguard/wg0.conf
 }
 
-nordlynxVpn() {
+startNordlynxVpn() {
   #Use secrets if present
   #hide credentials even in debug
   set +x
@@ -190,6 +194,16 @@ nordlynxVpn() {
   done
 }
 
+getWireguardServerFromJsonAll(){
+  local country=${1,,}
+  local city=${2,,}
+  if [[ -z ${country} ]] || [[ -z ${city} ]]; then
+    log "Error, empty county and/or city"
+    return
+  fi
+  echo $jsonAll | jq "map(select(.technologies[].name|test(\"wireguard\";\"i\")))|map(select(.locations[].country.name|test(\"${country}\";\"i\")))|map(select(.locations[].country.city.name|test(\"${city}\";\"i\")))|."
+}
+
 country_filter() {
   local country=(${*//[;,]/ })
   if [[ ${#country[@]} -ge 1 ]]; then
@@ -213,7 +227,7 @@ city_filter() {
   city=${city,,}
   if [ -n "${city}" ]; then
     city=${city// /-}
-    local city_id=$(echo ${json_countries} | jq --raw-output ".[].cities[]| select(.name|test(\"seattle\";\"i\")) |.id")
+    local city_id=$(echo ${json_countries} | jq --raw-output ".[].cities[]| select(.name|test(\"${city}\";\"i\")) |.id")
     if [[ -n ${city_id} ]]; then
       log "found city : ${city} (${city_id})"
       echo "filters\[city_id\]=${city_id}&"

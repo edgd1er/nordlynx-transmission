@@ -16,6 +16,7 @@ LABEL maintainer="edgd1er <edgd1er@htomail.com>" \
       org.label-schema.schema-version="1.0"
 
 ENV TZ=${TZ}
+ENV NORDVPNCLIENT_INSTALLED=${NORDVPNCLIENT_INSTALLED}
 ENV DEBIAN_FRONTEND=noninteractive
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -31,13 +32,15 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && apt-get update && export DEBIAN_FRONTEND=non-interactive \
     && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
     ca-certificates tzdata dante-server net-tools unzip unrar-free bc tar \
-    transmission transmission-common transmission-daemon transmission-cli vim tinyproxy ufw iputils-ping \
-    # nordvpn requirements \
-    iproute2 iptables readline-common dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client \
-    gpg-wks-server gpgconf gpgsm libassuan0 libksba8 libnpth0 libreadline8 libsqlite3-0 lsb-base pinentry-curses \
+    transmission transmission-common transmission-daemon transmission-cli tinyproxy ufw iputils-ping vim \
     # wireguard \
     wireguard-tools \
     #ui start \
+    && if [[ ${NORDVPNCLIENT_INSTALLED} -eq 1 ]]; then \
+    apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy \
+    # nordvpn requirements \
+    iproute2 iptables readline-common dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client \
+    gpg-wks-server gpgconf gpgsm libassuan0 libksba8 libnpth0 libreadline8 libsqlite3-0 lsb-base pinentry-curses; fi \
     && mkdir -p /opt/transmission-ui \
     && echo "Install Shift" \
     && wget --no-cache -qO- https://github.com/killemov/Shift/archive/master.tar.gz | tar xz -C /opt/transmission-ui \
