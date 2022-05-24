@@ -9,12 +9,19 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DRY: false
+    strategy:
+      matrix:
+        branch:
+          - main
+          - dev
+
     steps:
       - name: Delete workflow runs
         uses: dmvict/clean-workflow-runs@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           save_period: 30
+          branch: ${{ matrix.branch }}
           dry: ${{ env.DRY }}
 
       - name: Delete failed workflow runs
@@ -30,5 +37,14 @@ jobs:
             stale
             timed_out
           save_period: 5
+          branch: ${{ matrix.branch }}
           save_min_runs_number: 0
           dry: ${{ env.DRY }}
+
+      - name: Delete workflow runs mattracks
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 30
+          keep_minimum_runs: 1

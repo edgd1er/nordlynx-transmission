@@ -1,5 +1,4 @@
 [![lint nordlynx transmission dockerfile](https://github.com/edgd1er/nordlynx-transmission/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/edgd1er/nordlynx-transmission/actions/workflows/lint.yml)
-
 [![build multi-arch images](https://github.com/edgd1er/nordlynx-transmission/actions/workflows/buildPush.yml/badge.svg?branch=main)](https://github.com/edgd1er/nordlynx-transmission/actions/workflows/buildPush.yml)
 
 ![Docker Size](https://badgen.net/docker/size/edgd1er/nordlynx-transmission?icon=docker&label=Size)
@@ -9,7 +8,7 @@
 
 # nordlynx-transmission
 
-/!\ please consider this project as a work in progress especially concerning iptables management. 
+/!\ please consider this project as a work in progress especially concerning iptables/leak management. 
 
 purpose: compare wireguard and nordlynx speed transmisssion.
 

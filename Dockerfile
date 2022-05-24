@@ -1,7 +1,7 @@
 FROM debian:bullseye-slim
 
 ARG aptcacher=''
-ARG VERSION=3.12.5
+ARG VERSION=3.13.0
 ARG TZ=America/Chicago
 ARG NORDVPNCLIENT_INSTALLED=1
 
@@ -25,10 +25,13 @@ WORKDIR /app
 #hadolint ignore=DL3018,DL3008
 RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
-    echo -e "alias checkip='curl -sm10 \"https://zx2c4.com/ip\";\n'\nalias checkhttp='curl -sm 10 -x http://0.0.0.0:${WEBPROXY_PORT} \"https://ifconfig.me/ip\";\n'\nalias checksocks='curl -x http://0.0.0.0:1080 \"https://ifconfig.me/ip\";\n'" >> ~/.bash_aliases\
-    echo -e "alias checkvpn='curl -m 10 -s https://api.nordvpn.com/vpn/check/full | jq -r \'.[\"status\"]\';\n"  >> ~/.bash_aliases \
+    echo "alias checkip='curl -sm 10 \"https://zx2c4.com/ip\"'" | tee -a ~/.bash_aliases \
+    && echo "alias checkhttp='curl -sm 10 -x http://\${HOSTNAME}:8118 \"https://ifconfig.me/ip\"'" | tee -a ~/.bash_aliases \
+    && echo "alias checksocks='curl -x http://\${HOSTNAME}:1080 \"https://ifconfig.me/ip\"'" | tee -a ~/.bash_aliases \
+    && echo "alias checkvpn='curl -sm 10 \"https://api.nordvpn.com/vpn/check/full\" | jq -r .status'" | tee -a ~/.bash_aliases \
+    && echo "alias getcheck='curl -sm 10 \"https://api.nordvpn.com/vpn/check/full\" | jq . '" | tee -a ~/.bash_aliases \
     # allow to install resolvconf
-    echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
+    && echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
     && apt-get update && export DEBIAN_FRONTEND=non-interactive \
     && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
     ca-certificates tzdata dante-server net-tools unzip unrar-free bc tar \
@@ -59,7 +62,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && wget -nv -t10 -O /tmp/nordrepo.deb https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn-release_1.0.0_all.deb \
     && apt-get install -qqy --no-install-recommends /tmp/nordrepo.deb && apt-get update \
     && apt-get install -qqy --no-install-recommends -y nordvpn="${VERSION}" \
-    && apt-get remove -y wget nordvpn-release && find /etc/apt/ -iname "*.list" -exec cat {} \; && echo \
+    && apt-get remove -y wget nordvpn-release \
     && mkdir -p /run/nordvpn \
     #chmod a+x /app/*.sh  \
     && addgroup --system vpn && useradd -lNms /usr/bash -u "${NUID:-1000}" -G nordvpn,vpn nordclient \
@@ -68,8 +71,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && groupmod -g 1000 users && useradd -u 911 -U -d /config -s /bin/false abc && usermod -G users abc \
     && if [[ -n ${aptcacher} ]]; then rm /etc/apt/apt.conf.d/01proxy; fi \
     # patch wg-quick script to remove the need for running in privilegied mode
-    && sed -i "s:sysctl -q net.ipv4.conf.all.src_valid_mark=1:echo skipping setting net.ipv4.conf.all.src_valid_mark:" /usr/bin/wg-quick \
-    && cat /etc/tinyproxy/tinyproxy.conf
+    && sed -i "s:sysctl -q net.ipv4.conf.all.src_valid_mark=1:echo skipping setting net.ipv4.conf.all.src_valid_mark:" /usr/bin/wg-quick
 
 COPY --chmod=755 etc/ /etc/
 COPY --chmod=755 app/ /app/
