@@ -6,11 +6,11 @@ SHELL:=bash
 # Enable BuildKit for Docker build
 export DOCKER_BUILDKIT:=1
 
-
 # https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
-help:
+help: ## generate help list
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-lint: ## stop all containers
+lint: ## lint both dockerfile
 	@echo "lint dockerfile ..."
 	docker run -i --rm hadolint/hadolint < Dockerfile
 

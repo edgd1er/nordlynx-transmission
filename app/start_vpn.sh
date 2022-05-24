@@ -3,6 +3,7 @@
 set -euo pipefail
 
 #Vars
+TSEC=5
 RDIR=/run/nordvpn/
 [[ ${NORDVPN_DEBUG:-false} == "true" ]] && set -x || true
 DEBUG=${DEBUG:-false}
@@ -133,20 +134,22 @@ else
   exit
 fi
 
-log "INFO: current WAN IP: $(getCurrentWanIp) / unprotected ip: ${UNP_IP}"
-
-#prevent leak through default route
-if [[ "true" = "$DROP_DEFAULT_ROUTE" ]] && [[ -n ${route_net_gateway} ]]; then
-  echo "DROPPING DEFAULT ROUTE"
-  # Remove the original default route to avoid leaks.
-  #/sbin/ip route del default via "${route_net_gateway}" || exit 1
-fi
+#
+echo "waiting ${TSEC} for routing to be up"
+sleep ${TSEC}
 
 #connected
 status=$(getVpnProtectionStatus)
-if [[ ${status,,} == "unprotected" ]]; then
-  echo "Error, status: ${status}"
+currentIp=$(getCurrentWanIp)
+log "INFO: current WAN IP: $(getCurrentWanIp) / unprotected ip: ${UNP_IP}, status: ${status}"
+if [[ ${UNP_IP} == ${currentIp} ]]; then
+  echo "Error, ${currentIp} is the same as host external ip (${UNP_IP}), exiting."
   exit 1
+fi
+
+if [[ ${status,,} == "unprotected" ]]; then
+  echo "Warning, status is ${status} according to nordvpn."
+  curl -sm 10 "https://api.nordvpn.com/vpn/check/full" | jq .
 fi
 
 generateDantedConf
