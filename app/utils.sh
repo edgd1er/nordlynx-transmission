@@ -24,21 +24,11 @@ jsonAll=$(curl -LSs "${nordvpn_api}/v1/servers?limit=9999999")
 #jsonAll=$(curl -LSs "${nordvpn_api}/v1/servers?limit=1000")
 jsonOne=$(echo $jsonAll | jq '[.[1]]')
 
-fatal_error() {
-  #printf "${TIME_FORMAT} \e[41mERROR:\033[0m %b\n" "$*" >&2
-  printf "\e[41mERROR:\033[0m %b\n" "$*" >&2
-  exit 1
-}
-
-log() {
-  echo "$(date +"%Y-%m-%d %T"): $*"
-}
-
 getCurrentWanIp() {
   curl -s 'https://api.ipify.org?format=json' | jq .ip
 }
 
-getVpnProtectionStatus(){
+getVpnProtectionStatus() {
   curl -m 10 -s https://api.nordvpn.com/vpn/check/full | jq -r '.["status"]'
 }
 
@@ -50,6 +40,10 @@ getEthIp() {
   ip -j a | jq -r '.[] |select(.ifname=="eth0")| .addr_info[].local'
 }
 
+getEthCidr() {
+  ip -j a show eth0 | jq -r '.[].addr_info[0]|"\( .local)/\(.prefixlen)"'
+}
+
 generateDantedConf() {
   log "INFO: DANTE: set configuration socks proxy"
   SOURCE_DANTE_CONF=/etc/danted.conf.tmpl
@@ -57,6 +51,53 @@ generateDantedConf() {
   INTERFACE=$(getVpnItf)
   sed "s/INTERFACE/${INTERFACE}/" ${SOURCE_DANTE_CONF} >${DANTE_CONF}
   sed -i "s/DANTE_DEBUG/${DANTE_DEBUG}/" ${DANTE_CONF}
+  #Allow from private addresses from clients
+  if [[ -n ${LOCAL_NETWORK:-''} ]]; then
+    aln=(${LOCAL_NETWORK//,/ })
+    msg=""
+    for l in ${aln[*]}; do
+      echo "client pass {
+        from: ${l} to: 0.0.0.0/0
+	log: error
+}" >>${DANTE_CONF}
+    done
+  else
+    #no local network defined, allowing known private addresses.
+    echo "#Allow private addresses from clients
+client pass {
+        from: 10.0.0.0/8 to: 0.0.0.0/0
+  log: error
+}
+
+client pass {
+        from: 172.16.0.0/12 to: 0.0.0.0/0
+	log: error
+}
+
+client pass {
+        from: 192.168.0.0/16 to: 0.0.0.0/0
+	log: error
+}" >>${DANTE_CONF}
+  fi
+
+  #Allow local access + eth0 network
+  echo "client pass {
+        from: 127.0.0.0/8 to: 0.0.0.0/0
+	log: error
+}
+
+client pass {
+        from: $(getEthCidr) to: 0.0.0.0/0
+	log: error
+}
+
+#Allow all sockets connections
+socks pass {
+        from: 0.0.0.0/0 to: 0.0.0.0/0
+        protocol: tcp udp
+        log: error
+}
+" >>${DANTE_CONF}
   [[ -n ${DANTE_LOGLEVEL} ]] && sed -i "s/log: DANTE_LOGLEVEL/log: ${DANTE_LOGLEVEL}/" ${DANTE_CONF}
   [[ -n ${DANTE_ERRORLOG} ]] && sed -i "s#errorlog: /dev/null#errorlog: ${DANTE_ERRORLOG}#" ${DANTE_CONF}
   [[ 0 -ne ${DANTE_DEBUG} ]] && cat ${DANTE_CONF}
@@ -74,21 +115,29 @@ generateTinyproxyConf() {
 
   EXT_IP=$(getNordlynxIp)
   INT_IP=$(getEthIp)
+  INT_CIDR=$(getEthCidr)
 
   #Main
   log "INFO: TINYPROXY: set configuration INT_IP: ${INT_IP}/ EXT_IP: ${EXT_IP} / log level: ${TINY_LOGLEVEL} / local network: ${LOCAL_NETWORK}"
   sed "s/TINYPORT/${TINYPORT}/" ${SOURCE_CONF} >${CONF}
   sed -i "s/TINY_LOGLEVEL/${TINY_LOGLEVEL}/" ${CONF}
   sed -i "s/#Listen .*/Listen ${INT_IP}/" ${CONF}
+  sed -i "s!#Allow INT_CIDR!Allow ${INT_CIDR}!" ${CONF}
 
   #Allow only local network or all private address ranges
-  if [[ -n ${LOCAL_NETWORK} ]]; then
-    sed -i "s!#Allow LOCAL_NETWORK!Allow ${LOCAL_NETWORK}!" ${CONF}
+  if [[ -n ${LOCAL_NETWORK:-''} ]]; then
+    aln=(${LOCAL_NETWORK//,/ })
+    msg="s%#Allow LOCAL_NETWORK%Allow "
+    for l in ${aln[*]}; do
+      msg+="${l}\nAllow "
+    done
+    sed -i "${msg:0:-6}%" ${CONF}
+  else
+    #or all private address ranges, may 10.x.x.x/8 is not a good idea as it is also the vpn range.
+    sed -i "s!#Allow 10!Allow 10!" ${CONF}
+    sed -i "s!#Allow 172!Allow 172!" ${CONF}
+    sed -i "s!#Allow 192!Allow 192!" ${CONF}
   fi
-  NT=${INT_IP%%.*}
-  [[ 192 -eq ${NT} ]] && sed -i 's!#Allow 192!Allow 192!' ${CONF}
-  [[ 172 -eq ${NT} ]] && sed -i 's!#Allow 172!Allow 172!' ${CONF}
-  [[ 10 -eq ${NT} ]] && sed -i 's!#Allow 10!Allow 10!' ${CONF}
 
   [[ ${DEBUG:-false} ]] && grep -vE "(^#|^$)" ${CONF} || true
 }
@@ -96,31 +145,32 @@ generateTinyproxyConf() {
 # NORDVPN specific #
 ####################
 
-getJsonFromNordApi(){
+getJsonFromNordApi() {
+  set +x
   #Nordvpn has a fetch limit, storing json to prevent hitting the limit.
-    export json_countries=$(curl -LSs ${nordvpn_api}/v1/servers/countries)
-    export possible_country_codes="$(echo ${json_countries} | jq -r .[].code | tr '\n' ', ')"
-    export possible_country_names="$(echo ${json_countries} | jq -r .[].name | tr '\n' ', ')"
-    export possible_city_names="$(echo ${json_countries} | jq -r .[].cities[].name | tr '\n' ', ')"
-    # groups used for CATEGORY
-    export json_groups=$(curl -LSs ${nordvpn_api}/v1/servers/groups)
-    export possible_groups="$(echo ${json_groups} | jq -r '[.[].title] | @csv' | tr -d '\"')"
-    # technology
-    export json_technologies=$(curl -LSs ${nordvpn_api}/v1/technologies)
-    export possible_technologies=$(echo ${json_technologies} | jq -r '[.[].name] | @csv' | tr -d '\"')
-    export possible_technologies_id=$(echo ${json_technologies} | jq -r '[.[].identifier] |@csv' | tr -d '\"')
-    log "Checking NORDPVN API responses"
-    for po in json_countries json_groups json_technologies; do
-      if [[ $(echo ${!po} | grep -c "<html>") -gt 0 ]]; then
-        msg=$(echo ${!po} | grep -oP "(?<=title>)[^<]+")
-        echo "ERROR, unexpected html content from NORDVPN servers: ${msg}"
-        sleep 30
-        exit
-      fi
-    done
-    log "End checking NORDPVN API responses"
+  export json_countries=$(curl -LSs ${nordvpn_api}/v1/servers/countries)
+  export possible_country_codes="$(echo ${json_countries} | jq -r .[].code | tr '\n' ', ')"
+  export possible_country_names="$(echo ${json_countries} | jq -r .[].name | tr '\n' ', ')"
+  export possible_city_names="$(echo ${json_countries} | jq -r .[].cities[].name | tr '\n' ', ')"
+  # groups used for CATEGORY
+  export json_groups=$(curl -LSs ${nordvpn_api}/v1/servers/groups)
+  export possible_groups="$(echo ${json_groups} | jq -r '[.[].title] | @csv' | tr -d '\"')"
+  # technology
+  export json_technologies=$(curl -LSs ${nordvpn_api}/v1/technologies)
+  export possible_technologies=$(echo ${json_technologies} | jq -r '[.[].name] | @csv' | tr -d '\"')
+  export possible_technologies_id=$(echo ${json_technologies} | jq -r '[.[].identifier] |@csv' | tr -d '\"')
+  log "Checking NORDPVN API responses"
+  for po in json_countries json_groups json_technologies; do
+    if [[ $(echo ${!po} | grep -c "<html>") -gt 0 ]]; then
+      msg=$(echo ${!po} | grep -oP "(?<=title>)[^<]+")
+      log "ERROR, unexpected html content from NORDVPN servers: ${msg}"
+      sleep 30
+      exit
+    fi
+  done
+  log "End checking NORDPVN API responses"
+  [[ ${NORDVPN_DEBUG:-false} == "true" ]] && set -x || true
 }
-
 
 getNordlynxIp() {
   ip -j a | jq -r '.[] |select((.ifname|test("wg0";"i")) or (.ifname|test("nordlynx";"i")) or (.ifname|test("tun";"i")) ) | .addr_info[].local'
@@ -194,7 +244,7 @@ startNordlynxVpn() {
   done
 }
 
-getWireguardServerFromJsonAll(){
+getWireguardServerFromJsonAll() {
   local country=${1,,}
   local city=${2,,}
   if [[ -z ${country} ]] || [[ -z ${city} ]]; then
@@ -277,7 +327,6 @@ technologies_filter() {
 # Wireguard specific #
 ######################
 
-
 installWireguardPackage() {
   apt-get update && apt-get install -y --no-install-recommended wireguard wireguard-tools
 }
@@ -289,7 +338,7 @@ generateWireguardConf() {
     filters+="$(country_filter ${COUNTRY})"
     filters+="$(city_filter ${CITY})"
     filters+="$(group_filter ${GROUP})"
-    filters+="$(technologies_filter  wireguard_udp)"
+    filters+="$(technologies_filter wireguard_udp)"
     # curl 'https://nordvpn.com/wp-admin/admin-ajax.php?action=servers_recommendations&filters={%22country_id%22:228,%22servers_groups%22:[15],%22servers_technologies%22:[35]}' --globoff -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:98.0) Gecko/20100101 Firefox/98.0' -H 'Accept: */*' -H 'Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3' -H 'Accept-Encoding: gzip, deflate, br' -H 'X-Requested-With: XMLHttpRequest' -H 'DNT: 1' -H 'Connection: keep-alive' -H 'Referer: https://nordvpn.com/fr/servers/tools/' -H 'Cookie: locale=fr; nord_countdown=1649107344587; nord_countdown_iteration=6; nextbid=ce48121b-b30f-47da-861b-448312cbbc41; FirstSession=source%3Dduckduckgo.com%26campaign%3D%26medium%3Dreferral%26term%3D%26content%3D%26hostname%3Dnordvpn.com%26date%3D20220404%26query%3Dnull; CurrentSession=source%3Dduckduckgo.com%26campaign%3D%26medium%3Dreferral%26term%3D%26content%3D%26hostname%3Dnordvpn.com%26date%3D20220404%26query%3Dnull; fontsCssCache=true' -H 'Sec-Fetch-Dest: empty' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-GPC: 1' -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' -H 'TE: trailers'
     recommendations=$(curl --retry 3 -LsS "https://api.nordvpn.com/v1/servers/recommendations?${filters}limit=1")
     server=$(jq -r '.[0] | del(.services, .specifications)' <<<"${recommendations}")
@@ -327,7 +376,19 @@ connectWireguardVpn() {
   wg show wg0
 }
 
-iptableProtection(){
+enforce_proxies_nordvpn() {
+  log "proxies: allow ports 1080, ${WEBPROXY_PORT}"
+  nordvpn whitelist add port 1080 protocol TCP
+  nordvpn whitelist add port 1080 protocol UDP
+  nordvpn whitelist add port ${WEBPROXY_PORT} protocol TCP
+  iptables -L
+}
+
+enforce_iptables() {
+  log "WARNING: enforce_iptables: Nothing done."
+
+}
+iptableProtection() {
   log "INFO: iptables: setting iptables."
   #iptables -P INPUT ACCEPT
   #iptables -P FORWARD ACCEPT
@@ -342,14 +403,9 @@ iptableProtection(){
   #iptables -L -A OUTPUT -o eth0 -j DROP
 }
 
-
 ########################
 # Normal run functions #
 ########################
-log() {
-  printf "%b\n" "$*" >/dev/stderr
-}
-
 fatal_error() {
   printf "\e[41mERROR:\033[0m %b\n" "$*" >&2
   exit 1
@@ -363,4 +419,73 @@ script_needs() {
 script_init() {
   log "Checking curl installation"
   script_needs curl
+}
+
+log() {
+  echo "$(date +"%Y-%m-%d %T"): $*"
+}
+
+setTimeZone() {
+  [[ ${TZ} == $(cat /etc/timezone) ]] && return
+  log "INFO: Setting timezone to ${TZ}"
+  ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime
+  dpkg-reconfigure -fnoninteractive tzdata
+}
+
+checkLatest() {
+  CANDIDATE=$(curl --retry 3 -LSs "https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/" | grep -oP "NordVPN \K[0-9]\.[0-9.-]{1,4}" | head -1)
+  VERSION=$(dpkg-query --showformat='${Version}' --show nordvpn) || true
+  [[ -z ${VERSION} ]] && VERSION=$(apt-cache show nordvpn | grep -oP "(?<=Version: ).+") || true
+  if [[ ${VERSION} =~ ${CANDIDATE} ]]; then
+    log "INFO: No update needed for nordvpn (${VERSION})"
+  else
+    log "**********************************************************************"
+    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
+    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
+    log "**********************************************************************"
+  fi
+}
+
+checkLatestApt() {
+  apt-get update
+  VERSION=$(apt-cache policy nordvpn | grep -oP "Installed: \K.+")
+  CANDIDATE=$(apt-cache policy nordvpn | grep -oP "Candidate: \K.+")
+  CANDIDATE=${CANDIDATE:-${VERSION}}
+  if [[ ${CANDIDATE} != ${VERSION} ]]; then
+    log "**********************************************************************"
+    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
+    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
+    log "**********************************************************************"
+  else
+    log "INFO: No update needed for nordvpn (${VERSION})"
+  fi
+}
+
+## tests functions
+getTinyConf() {
+  grep -v ^# /etc/tinyproxy/tinyproxy.conf | sed "/^$/d"
+}
+
+getDanteConf() {
+  grep -v ^# /etc/sockd.conf | sed "/^$/d"
+}
+
+testhproxy() {
+  PROXY_HOST=$(getEthIp)
+  IP=$(curl -m5 -sqx http://${PROXY_HOST}:${WEBPROXY_PORT} "https://ifconfig.me/ip")
+  if [[ $? -eq 0 ]]; then
+    log "IP is ${IP}"
+  else
+    log "ERROR: testhproxy: curl through http proxy to https://ifconfig.me/ip failed"
+  fi
+}
+
+testsproxy() {
+  PROXY_HOST=$(getEthIp)
+  IP=$(curl -m5 -sqx socks5://${PROXY_HOST}:1080 "https://ifconfig.me/ip")
+  if [[ $? -eq 0 ]]; then
+    log "IP is ${IP}"
+  else
+    log "ERROR: testsproxy: curl through socks proxy to https://ifconfig.me/ip failed"
+  fi
 }

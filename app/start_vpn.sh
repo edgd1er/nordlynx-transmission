@@ -3,10 +3,10 @@
 set -euo pipefail
 
 #Vars
+[[ -f /app/utils.sh ]] && source /app/utils.sh || true
+[[ ${NORDVPN_DEBUG:-false} == "true" ]] && set -x || true
 TSEC=5
 RDIR=/run/nordvpn/
-[[ ${NORDVPN_DEBUG:-false} == "true" ]] && set -x || true
-DEBUG=${DEBUG:-false}
 COUNTRY=${COUNTRY:-''}
 CONNECT=${CONNECT:-''}
 GROUP=${GROUP:-''}
@@ -21,17 +21,10 @@ EP_IP=
 EP_PORT=${EP_PORT:-51820}
 IP_PORT=${IP_PORT:-54778}
 
-[[ -f /app/utils.sh ]] && source /app/utils.sh || true
+
 container_ip=$(getEthIp)
 
 #Functions
-setTimeZone() {
-  [[ ${TZ} == $(cat /etc/timezone) ]] && return
-  log "INFO: Setting timezone to ${TZ}"
-  ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime
-  dpkg-reconfigure -fnoninteractive tzdata
-}
-
 set_iptables() {
   action=${1:-'DROP'}
   log "INFO: setting iptables policy to ${action}"
@@ -49,35 +42,6 @@ setIPV6() {
     sed -i -E "s/net.ipv6.conf.all.disable_ipv6 = ./net.ipv6.conf.all.disable_ipv6 = ${1}/" /etc/sysctl.conf
   fi
   sysctl -p || true
-}
-
-checkLatest() {
-  CANDIDATE=$(curl --retry 3 -LSs "https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/" | grep -oP "NordVPN \K[0-9]\.[0-9.-]{1,4}" | head -1)
-  VERSION=$(dpkg-query --showformat='${Version}' --show nordvpn) || true
-  [[ -z ${VERSION} ]] && VERSION=$(apt-cache show nordvpn | grep -oP "(?<=Version: ).+") || true
-  if [[ ${VERSION} =~ ${CANDIDATE} ]]; then
-    log "INFO: No update needed for nordvpn (${VERSION})"
-  else
-    log "**********************************************************************"
-    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
-    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
-    log "**********************************************************************"
-  fi
-}
-
-checkLatestApt() {
-  apt-get update
-  VERSION=$(apt-cache policy nordvpn | grep -oP "Installed: \K.+")
-  CANDIDATE=$(apt-cache policy nordvpn | grep -oP "Candidate: \K.+")
-  CANDIDATE=${CANDIDATE:-${VERSION}}
-  if [[ ${CANDIDATE} != ${VERSION} ]]; then
-    log "**********************************************************************"
-    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
-    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
-    log "**********************************************************************"
-  else
-    log "INFO: No update needed for nordvpn (${VERSION})"
-  fi
 }
 
 #embedded in nordvpn client but not efficient in container. done in docker-compose
@@ -125,9 +89,11 @@ if [ -f /run/secrets/NORDVPN_PRIVKEY ]; then
   fi
   generateWireguardConf
   connectWireguardVpn
+  enforce_iptables
 elif [[ ${NORDVPNCLIENT_INSTALLED} -eq 1 ]]; then
   log "Info: NORDLYNX: no wireguard private key found, connecting with nordvpn client."
-  nordlynxVpn
+  startNordlynxVpn
+  enforce_proxies_nordvpn
   extractLynxConf
 else
   log "Error: NORDLYNX: no nordvpn client, no wireguard private key, exiting."
