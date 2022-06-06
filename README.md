@@ -8,7 +8,7 @@
 
 # nordlynx-transmission
 
-/!\ please consider this project as a work in progress especially concerning iptables/leak management. 
+/!\ please consider this project as a work in progress especially concerning iptables/leak management when not using nordvpn client (ie: NORDVPN_PRIVKEY found). 
 
 purpose: compare wireguard and nordlynx speed transmisssion.
 
