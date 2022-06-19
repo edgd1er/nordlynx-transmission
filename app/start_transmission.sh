@@ -22,8 +22,7 @@ log() {
 #. env_var_scriptoi
 
 [[ -n ${TRANSMISSION_RPC_USERNAME} ]] && CREDS="-n \"${TRANSMISSION_RPC_USERNAME}:${TRANSMISSION_RPC_PASSWORD}\"" || CREDS=""
-while [ $(ps -ef |grep -c transmission-daemon ) -gt 1 ]
-do
+while [ $(ps -ef | grep -c transmission-daemon) -gt 1 ]; do
   transmission-remote http://${container_ip}:${TRANSMISSION_RPC_PORT} ${CREDS} --exit
   sleep 1
 done
@@ -38,25 +37,23 @@ if [[ -x ${SCRIPT} ]]; then
   echo "${SCRIPT} returned $?"
 fi
 
-
 # Add containerIp to RPC_WHITELIST if missing
 if [[ ! ${TRANSMISSION_RPC_WHITELIST} =~ ${container_ip} ]]; then
-  dockerNet=$(echo ${container_ip} |grep -oP ".+\.")"*"
+  dockerNet=$(echo ${container_ip} | grep -oP ".+\.")"*"
   log "Adding ${dockerNet} to TRANSMISSION_RPC_WHITELIST (${TRANSMISSION_RPC_WHITELIST})"
- TRANSMISSION_RPC_WHITELIST=${TRANSMISSION_RPC_WHITELIST},${dockerNet}
+  export TRANSMISSION_RPC_WHITELIST=${TRANSMISSION_RPC_WHITELIST},${dockerNet}
 fi
 # Persist transmission settings for use by transmission-daemon
 python3 /app/transmission/persistEnvironment.py ${env_var_script}
 
-log "Updating TRANSMISSION_BIND_ADDRESS_IPV4 to the ip of ${dev} : ${container_ip}"
-export TRANSMISSION_BIND_ADDRESS_IPV4=${nordlynx_ip}
+log "Updating TRANSMISSION_BIND_ADDRESS_IPV4 to the ip of ${dev} : ${nordlynx_ip}"
+export TRANSMISSION_BIND_ADDRESS_IPV4="${nordlynx_ip}"
 # Also update the persisted settings in case it is already set. First remove any old value, then add new.
 sed -i '/TRANSMISSION_BIND_ADDRESS_IPV4/d' ${env_var_script}
 
-log "Updating TRANSMISSION_RPC_BIND_ADDRESS to the ip of ${container_ip}"
-export TRANSMISSION_RPC_BIND_ADDRESS=${container_ip}
-sed -i '/TRANSMISSION_BIND_ADDRESS_IPV4/d' ${env_var_script}
-log "export TRANSMISSION_BIND_ADDRESS_IPV4=${container_ip}" >> ${env_var_script}
+log "Updating TRANSMISSION_RPC_BIND_ADDRESS to the ip of ${container_ip},127.0.0.1"
+export TRANSMISSION_RPC_BIND_ADDRESS="${container_ip},127.0.0.1"
+sed -i '/TRANSMISSION_RPC_BIND_ADDRESS/d' ${env_var_script}
 
 #define UI
 if [[ "combustion" = "$TRANSMISSION_WEB_UI" ]]; then
@@ -119,7 +116,7 @@ su --preserve-environment ${RUN_AS} -s /bin/bash -c "/usr/bin/transmission-daemo
 #TODO execute post start.
 # If transmission-post-start.sh exists, run it
 SCRIPT=/etc/scripts/transmission-post-start.sh
-if [[ -x ${SCRIPT}   ]]; then
+if [[ -x ${SCRIPT} ]]; then
   echo "Executing ${SCRIPT}"
   ${SCRIPT} "${USER_SCRIPT_ARGS[*]}"
   echo "${SCRIPT} returned $?"

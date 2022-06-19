@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        value: ${{ toJSON(fromJSON(needs.build.outputs.matrix).tags) }}
+        value: ${{ fromJSON(needs.build.outputs.matrix).tags }}
     steps:
       - name: machine echo matrix
         env: { CONTENT: "${{ toJson(matrix) }}" }
