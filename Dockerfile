@@ -25,11 +25,13 @@ WORKDIR /app
 #hadolint ignore=DL3018,DL3008
 RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
-    echo "alias checkip='curl -sm 10 \"https://zx2c4.com/ip\"'" | tee -a ~/.bash_aliases \
-    && echo "alias checkhttp='curl -sm 10 -x http://\${HOSTNAME}:8118 \"https://ifconfig.me/ip\"'" | tee -a ~/.bash_aliases \
-    && echo "alias checksocks='curl -x http://\${HOSTNAME}:1080 \"https://ifconfig.me/ip\"'" | tee -a ~/.bash_aliases \
-    && echo "alias checkvpn='curl -sm 10 \"https://api.nordvpn.com/vpn/check/full\" | jq -r .status'" | tee -a ~/.bash_aliases \
-    && echo "alias getcheck='curl -sm 10 \"https://api.nordvpn.com/vpn/check/full\" | jq . '" | tee -a ~/.bash_aliases \
+    echo "alias checkip='curl -sm 10 \"https://zx2c4.com/ip\"'" | tee -a ~/.bashrc \
+    && echo "alias checkhttp='curl -sm 10 -x http://\${HOSTNAME}:\${WEBPROXY_PORT:-8888} \"https://ifconfig.me/ip\"'" | tee -a ~/.bashrc \
+    && echo "alias checksocks='curl -sm10 -x socks5://\${HOSTNAME}:1080 \"https://ifconfig.me/ip\"'" | tee -a ~/.bashrc \
+    && echo "alias checkvpn='curl -sm 10 \"https://api.nordvpn.com/vpn/check/full\" | jq -r .status'" | tee -a ~/.bashrc \
+    && echo "alias getcheck='curl -sm 10 \"https://api.nordvpn.com/vpn/check/full\" | jq . '" | tee -a ~/.bashrc \
+    && echo "alias gettiny='grep -vP \"(^$|^#)\" /etc/tinyproxy/tinyproxy.conf'" | tee -a ~/.bashrc \
+    && echo "alias getdante='grep -vP \"(^$|^#)\" /etc/dante.conf'" | tee -a ~/.bashrc \
     # allow to install resolvconf
     && echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
     && apt-get update && export DEBIAN_FRONTEND=non-interactive \
@@ -98,7 +100,7 @@ ENV GLOBAL_APPLY_PERMISSIONS=true \
     PEER_DNS_PIN_ROUTES=true \
     DROP_DEFAULT_ROUTE='' \
     WEBPROXY_ENABLED=false \
-    WEBPROXY_PORT=8118 \
+    WEBPROXY_PORT=8888 \
     WEBPROXY_USERNAME='' \
     WEBPROXY_PASSWORD='' \
     LOG_TO_STDOUT=false \
