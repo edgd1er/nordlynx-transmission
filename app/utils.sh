@@ -19,10 +19,10 @@ fi
 DANTE_LOGLEVEL=${DANTE_LOGLEVEL//\"/}
 DANTE_ERRORLOG=${DANTE_ERRORLOG//\"/}
 
+eval $(/sbin/ip route list match 0.0.0.0 | awk '{if($5!="tun0"){print "GW="$3"\nINT="$5; exit}}')
+export GW
+export INT
 export nordvpn_api="https://api.nordvpn.com"
-jsonAll=$(curl -LSs "${nordvpn_api}/v1/servers?limit=9999999")
-#jsonAll=$(curl -LSs "${nordvpn_api}/v1/servers?limit=1000")
-jsonOne=$(echo $jsonAll | jq '[.[1]]')
 
 getCurrentWanIp() {
   curl -s 'https://api.ipify.org?format=json' | jq .ip
@@ -41,7 +41,7 @@ getEthIp() {
 }
 
 getEthCidr() {
-  ip -j a show eth0 | jq -r '.[].addr_info[0]|"\( .local)/\(.prefixlen)"'
+  ip -j a show eth0 | jq -r '.[].addr_info[0]|"\( .broadcast)/\(.prefixlen)"' | sed 's/255/0/g'
 }
 
 generateDantedConf() {
@@ -109,7 +109,7 @@ generateTinyproxyConf() {
   SOURCE_CONF=/etc/tinyproxy.conf.tmpl
   CONF=/etc/tinyproxy/tinyproxy.conf
   mkdir -p $(dirname ${CONF})
-  TINYPORT=${TINYPORT:-8888}
+  TINYPORT=${WEBPROXY_PORT:-8888}
   #Critical (least verbose), Error, Warning, Notice, Connect (to log connections without Info's noise), Info
   TINY_LOGLEVEL=${TINY_LOGLEVEL:-Error}
 
@@ -245,6 +245,12 @@ startNordlynxVpn() {
 }
 
 getWireguardServerFromJsonAll() {
+  if [[ -z ${jsonAll} ]]; then
+    jsonAll=$(curl -LSs "${nordvpn_api}/v1/servers?limit=9999999")
+  fi
+
+  #jsonAll=$(curl -LSs "${nordvpn_api}/v1/servers?limit=1000")
+  #jsonOne=$(echo $jsonAll | jq '[.[1]]')
   local country=${1,,}
   local city=${2,,}
   if [[ -z ${country} ]] || [[ -z ${city} ]]; then
@@ -474,7 +480,7 @@ testhproxy() {
   PROXY_HOST=$(getEthIp)
   IP=$(curl -m5 -sqx http://${PROXY_HOST}:${WEBPROXY_PORT} "https://ifconfig.me/ip")
   if [[ $? -eq 0 ]]; then
-    log "IP is ${IP}"
+    log "IP through http proxy is ${IP}"
   else
     log "ERROR: testhproxy: curl through http proxy to https://ifconfig.me/ip failed"
   fi
@@ -484,7 +490,7 @@ testsproxy() {
   PROXY_HOST=$(getEthIp)
   IP=$(curl -m5 -sqx socks5://${PROXY_HOST}:1080 "https://ifconfig.me/ip")
   if [[ $? -eq 0 ]]; then
-    log "IP is ${IP}"
+    log "IP through socks proxy is ${IP}"
   else
     log "ERROR: testsproxy: curl through socks proxy to https://ifconfig.me/ip failed"
   fi
