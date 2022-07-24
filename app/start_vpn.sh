@@ -15,14 +15,8 @@ NOIPV6=${NOIPV6:-'off'}
 CONNECT=${CONNECT// /_}
 [[ "${GROUPID:-''}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
 [[ -n ${GROUP} ]] && GROUP="--group ${GROUP}"
-LOCALNET=$(hostname -i | grep -Eom1 "(^[0-9]{1,3}\.[0-9]{1,3})")
-route_net_gateway=$(ip r | grep -oP "(?<=default via )([^ ]+)") || true
-EP_IP=
-EP_PORT=${EP_PORT:-51820}
-IP_PORT=${IP_PORT:-54778}
 
-
-container_ip=$(getEthIp)
+[[ -f /app/utils.sh ]] && source /app/utils.sh || true
 
 #Functions
 set_iptables() {
@@ -53,12 +47,22 @@ setup_nordvpn() {
   nordvpn set killswitch ${KILLERSWITCH:-'on'}
   nordvpn set ipv6 ${NOIPV6} 2>/dev/null
   [[ -n ${DNS:-''} ]] && nordvpn set dns ${DNS//[;,]/ }
-  [[ -z ${DOCKER_NET:-''} ]] && DOCKER_NET="$(hostname -i | grep -Eom1 "^[0-9]{1,3}\.[0-9]{1,3}").0.0/12"
+  if [[ -z ${DOCKER_NET:-''} ]]; then
+    DOCKER_NET="$(getEthCidr)"
+  fi
+  log "INFO: NORDVPN: whitelisting docker's net: ${DOCKER_NET}"
   nordvpn whitelist add subnet ${DOCKER_NET}
-  [[ -n ${NETWORK:-''} ]] && for net in ${NETWORK//[;,]/ }; do nordvpn whitelist add subnet ${net}; done
+  if [[ -n ${LOCAL_NETWORK:-''} ]]; then
+    for net in ${LOCAL_NETWORK//[;,]/ }; do
+      nordvpn whitelist add subnet ${net}
+      log "INFO: NORDVPN: adding route to local network ${net} via ${GW} dev ${INT}"
+      /sbin/ip route add "${net}" via "${GW}" dev "${INT}"
+    done
+  else
+    log "INFO: NORDVPN: no route to host's local network"
+  fi
   [[ -n ${PORTS:-''} ]] && for port in ${PORTS//[;,]/ }; do nordvpn whitelist add port ${port}; done
   [[ ${DEBUG} ]] && nordvpn -version && nordvpn settings
-  nordvpn whitelist add subnet ${LOCALNET}.0.0/16
 }
 
 #Main
