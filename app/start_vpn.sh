@@ -55,8 +55,11 @@ setup_nordvpn() {
   if [[ -n ${LOCAL_NETWORK:-''} ]]; then
     for net in ${LOCAL_NETWORK//[;,]/ }; do
       nordvpn whitelist add subnet ${net}
-      log "INFO: NORDVPN: adding route to local network ${net} via ${GW} dev ${INT}"
-      /sbin/ip route add "${net}" via "${GW}" dev "${INT}"
+      #do not readd route if already present
+      if [[ -z $(ip route show match ${net} | grep ${net}) ]]; then
+        log "INFO: NORDVPN: adding route to local network ${net} via ${GW} dev ${INT}"
+        /sbin/ip route add "${net}" via "${GW}" dev "${INT}"
+      fi
     done
   else
     log "INFO: NORDVPN: no route to host's local network"
