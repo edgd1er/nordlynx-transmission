@@ -2,10 +2,11 @@
 
 #vars
 PROXY_HOST="localhost"
-#PROXY_HOST="holdom3.mission.lan"
-HTTP_PORT=2888
-SOCK_PORT=2081
+SOCK_PORT=2081 # proxy socks
+HTTP_PORT=2888 # proxy http
+CONTAINER=transmission
 TRANS_PORT=9091
+#Common
 FAILED=0
 INTERVAL=4
 BUILD=1
@@ -18,7 +19,7 @@ buildAndWait() {
   docker compose -f docker-compose.yml up -d --build
   echo "Waiting for the container to be up.(every ${INTERVAL} sec)"
   logs=""
-#  while [ 0 -eq $(echo $logs | grep -c "Initialization Sequence Completed") ]; do
+  #  while [ 0 -eq $(echo $logs | grep -c "Initialization Sequence Completed") ]; do
   while [ 0 -eq $(echo $logs | grep -c "exited: start_vpn (exit status 0; expected") ]; do
     logs="$(docker compose logs)"
     sleep ${INTERVAL}
@@ -71,23 +72,21 @@ testProxies() {
 
 #Check ports
 [[ $1 == "-t" ]] && BUILD=0
+myIp=$(curl -m5 -sq https://ifconfig.me/ip)
 if [[ "localhost" == "${PROXY_HOST}" ]] && [[ 1 -eq ${BUILD} ]]; then
   buildAndWait
+  echo "***************************************************"
+  echo "Testing container"
+  echo "***************************************************"
+  docker compose exec ${CONTAINER} bash -c "ip -j a |jq  '.[]|select(.ifname|test(\"wg0|tun|nordlynx\"))|.ifname'"
+  docker compose exec ${CONTAINER} wg showconf nordlynx 2>/dev/null
+  docker compose exec ${CONTAINER} wg showconf wg0 2>/dev/null
+  docker compose exec ${CONTAINER} echo -e "eth0: $(ip -j a | jq -r '.[] |select(.ifname=="eth0")| .addr_info[].local')\n wg0: $(ip -j a | jq -r '.[] |select(.ifname=="wg0")| .addr_info[].local')\nnordlynx: $(ip -j a | jq -r '.[] |select(.ifname=="nordlynx")| .addr_info[].local')"
+  # check returned IP through http and socks proxy
+  testProxies
+  [[ 1 -eq ${BUILD} ]] && docker compose down
+else
+  # check returned IP through http and socks proxy
+  testProxies
 fi
 
-areProxiesPortOpened
-
-# check returned IP through http and socks proxy
-myIp=$(curl -m5 -sq https://ifconfig.me/ip)
-
-testProxies
-
-echo "***************************************************"
-echo "Testing container"
-echo "***************************************************"
-docker compose exec lynx bash -c "ip -j a |jq  '.[]|select(.ifname|test(\"wg0|tun|nordlynx\"))|.ifname'"
-docker compose exec lynx wg showconf nordlynx 2>/dev/null
-docker compose exec lynx wg showconf wg0 2>/dev/null
-docker compose exec lynx echo -e "eth0: $(ip -j a | jq -r '.[] |select(.ifname=="eth0")| .addr_info[].local')\n wg0: $(ip -j a | jq -r '.[] |select(.ifname=="wg0")| .addr_info[].local')\nnordlynx: $(ip -j a | jq -r '.[] |select(.ifname=="nordlynx")| .addr_info[].local')"
-
-[[ 1 -eq ${BUILD} ]] && docker compose down
