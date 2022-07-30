@@ -12,7 +12,7 @@ on:
       - '.github/**'
 env:
   IMAGE: nordlynx-transmission
-  VERSION: "3.14.1"
+  VERSION: "3.14.2"
   TAG: ${{ github.ref_name }}
   REVISION: ${{ github.ref_name }}
   USER: edgd1er
@@ -76,7 +76,9 @@ jobs:
         env: { CONTENT: "${{ toJson(steps.meta.outputs.json) }}" }
         run: "echo $CONTENT"
       - name: debug
-        run: echo "::set-output name=ttags::$(echo ${{ steps.meta.outputs.json }})"
+        run: |
+          echo "::set-output name=ttags::$(echo ${{ steps.meta.outputs.json }})"
+          echo "
         shell: bash
   inspect:
     needs: [ build ]
