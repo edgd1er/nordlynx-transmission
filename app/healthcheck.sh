@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
-
 
 #Vars
 N=3
 
 #Functions
 [[ -f /app/utils.sh ]] && source /app/utils.sh || true
+
+#check if eth0 ip has changed, change tinyproxy listen address if needed.
+changeTinyListenAddress
 
 #if protected
 if test "$( curl -m 10 -s https://api.nordvpn.com/vpn/check/full | jq -r '.["status"]' )" = "Protected" ; then
@@ -19,7 +20,6 @@ status=$(nordvpn status | grep -oP "Status: \K\w+" )
 if [ "connected" == ${status,,} ]; then
     exit 0
 fi
-
 
 # try N times to connect.
 while ${N} -gt 0
