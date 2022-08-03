@@ -467,7 +467,6 @@ checkLatestApt() {
   fi
 }
 
-## tests functions
 getTinyConf() {
   grep -v ^# /etc/tinyproxy/tinyproxy.conf | sed "/^$/d"
 }
@@ -476,6 +475,22 @@ getDanteConf() {
   grep -v ^# /etc/sockd.conf | sed "/^$/d"
 }
 
+getTinyListen() {
+  grep -oP "(?<=^Listen )[0-9\.]+" /etc/tinyproxy/tinyproxy.conf
+}
+
+changeTinyListenAddress(){
+  listen_ip4=$(getTinyListen)
+  current_ip4=$(getEthIp)
+  if [[ ! -z ${listen_ip4} ]] && [[ ! -z ${current_ip4} ]] && [[ ${listen_ip4} != ${current_ip4} ]] ; then
+    #dante ecoute sur le nom de l'interface eth0
+    echo "Tinyproxy: changing listening address from ${listen_ip4} to ${current_ip4}"
+    sed -i "s/${listen_ip4}/${current_ip4}/" /etc/tinyproxy/tinyproxy.conf
+    supervisorctl restart tinyproxy
+  fi
+}
+
+## tests functions
 testhproxy() {
   PROXY_HOST=$(getEthIp)
   IP=$(curl -m5 -sqx http://${PROXY_HOST}:${WEBPROXY_PORT} "https://ifconfig.me/ip")
