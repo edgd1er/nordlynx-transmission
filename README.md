@@ -86,18 +86,21 @@ sysclts:
 * DEBUG: (true/false) verbose mode for initial script launch and dante server.
 
 ```bash
-docker run -it --rm --cap-add NET_ADMIN -p 1081:1080 --device /dev/net/tun -e NORDVPN_USER=<email> -e NORDVPN_PASS='<pass>' -e COUNTRY=Poland
- -e edgd1er/nordlynx-proxy
+docker run -it --rm --cap-add NET_ADMIN -p 1081:1080 -p 8888:8888 -p 9091:9091
+ --device /dev/net/tun -e NORDVPN_USER=<email> -e NORDVPN_PASS='<pass>' -e COUNTRY=Poland
+ -e edgd1er/nordlynx-transmission
 ```
 
 ```yaml
 version: '3.8'
 services:
-  proxy:
-    image: edgd1er/nordvpn-proxy:latest
+  transmission:
+    image: edgd1er/nordlynx-transmission:latest
     restart: unless-stopped
     ports:
       - "1080:1080"
+      - "8888:8888"
+      - "9091:9091"
     devices:
       - /dev/net/tun
     sysctls:
