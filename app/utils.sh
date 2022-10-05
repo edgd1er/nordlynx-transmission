@@ -204,10 +204,15 @@ startNordlynxVpn() {
     exit 1
   fi
 
+  log "INFO: NORDVPN: starting nordvpn daemon"
+  action=start
+  isRunning=$(supervisorctl status nordvpnd | grep -c RUNNING) || true
+  [[ 0 -le ${isRunning} ]] && action=restart
+  [[ -e ${RDIR}/nordvpnd.sock ]] && rm -f ${RDIR}/nordvpnd.sock
   #start nordvpn daemon
   while [ ! -S ${RDIR}/nordvpnd.sock ]; do
     log "WARNING: NORDVPN: restart nordvpn daemon as no socket was found"
-    supervisorctl restart nordvpnd
+    supervisorctl ${action} nordvpnd
     sleep 10
   done
 
