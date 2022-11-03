@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DRY: false
-    strategy:
-      matrix:
-        branch:
-          - main
+#    strategy:
+#      matrix:
+#        branch:
+#          - main
 
     steps:
       - name: Delete workflow runs
@@ -35,7 +35,7 @@ jobs:
             skipped
             stale
             timed_out
-          save_period: 5
+          save_period: 1
           #branch: ${{ matrix.branch }}
           save_min_runs_number: 0
           dry: ${{ env.DRY }}
