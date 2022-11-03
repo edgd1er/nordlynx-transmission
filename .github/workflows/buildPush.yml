@@ -73,19 +73,19 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: set_print
-        env: { CONTENT: "${{ toJson(steps.meta.outputs.json) }}" }
-        run: "echo $CONTENT"
+        run: |
+          echo '${{ fromJson(steps.meta.outputs.json).tags }}'
       - name: debug
         run: |
-          echo "::set-output name=ttags::$(echo ${{ steps.meta.outputs.json }})"
-          echo "
+          env
+          echo "ttags=${{ fromJson(steps.meta.outputs.json).tags }}" >>${GITHUB_ENV}
         shell: bash
   inspect:
     needs: [ build ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        value: ${{ fromJSON(needs.build.outputs.matrix).tags }}
+        value: ${{ github_ref }}
     steps:
       - name: machine echo matrix
         env: { CONTENT: "${{ toJson(matrix) }}" }
