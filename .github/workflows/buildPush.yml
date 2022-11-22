@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        value: ${{ github_ref }}
+        value: ${{ env.github_ref }}
     steps:
       - name: machine echo matrix
         env: { CONTENT: "${{ toJson(matrix) }}" }
