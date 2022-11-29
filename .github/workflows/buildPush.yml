@@ -78,22 +78,5 @@ jobs:
       - name: debug
         run: |
           env
-          echo "ttags=${{ fromJson(steps.meta.outputs.json).tags }}" >>${GITHUB_ENV}
+          echo "ttags=${{ fromJson(steps.meta.outputs.json).tags }}" >> $GITHUB_OUTPUT
         shell: bash
-  inspect:
-    needs: [ build ]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        value: ${{ env.github_ref }}
-    steps:
-      - name: machine echo matrix
-        env: { CONTENT: "${{ toJson(matrix) }}" }
-        run: "echo $CONTENT"
-      - name: Inspect image
-        run: |
-          docker buildx imagetools inspect ${{ matrix.value }}
-      - name: clean
-        if: always() && github.event_name != 'pull_request'
-        run: |
-          [[ -f ${HOME}/.docker/config.json ]] && rm -f ${HOME}/.docker/config.json

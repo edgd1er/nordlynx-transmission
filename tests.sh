@@ -2,7 +2,7 @@
 
 #vars
 PROXY_HOST="localhost"
-SOCK_PORT=2081 # proxy socks
+SOCK_PORT=2080 # proxy socks
 HTTP_PORT=2888 # proxy http
 CONTAINER=transmission
 TRANS_PORT=9091
@@ -23,7 +23,7 @@ buildAndWait() {
   while [ 0 -eq $(echo $logs | grep -c "exited: start_vpn (exit status 0; expected") ]; do
     logs="$(docker compose logs)"
     sleep ${INTERVAL}
-    ((n++))
+    ((n+=1))
     echo "loop: ${n}: $(docker compose logs | tail -1)"
     [[ ${n} -eq 15 ]] && break || true
   done
