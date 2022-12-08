@@ -5,8 +5,9 @@ SHELL:=bash
 
 # Enable BuildKit for Docker build
 export DOCKER_BUILDKIT:=1
-NVPNVER:="3.15.1"
+NVPNVER:="3.15.2"
 APTCACHER:="192.168.53.208"
+#APTCACHER:="192.168.43.61"
 
 # https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help: ## generate help list
