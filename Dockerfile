@@ -83,7 +83,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
 FROM debian-base AS debian-dev
 
 ARG aptcacher=''
-ARG VERSION=3.15.1
+ARG VERSION=3.15.2
 ARG TZ=America/Chicago
 ARG NORDVPNCLIENT_INSTALLED=1
 ARG TBT_VERSION
