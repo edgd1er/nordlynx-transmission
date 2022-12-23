@@ -18,7 +18,7 @@ services:
       - CYBER_SEC=off
       - TECHNOLOGY=NordLynx
       - DEBUG=false
-      - NORDVPN_USER=<email> #Not required if using secrets
+      - NORDVPN_LOGIN=<email> #Not required if using secrets
       - NORDVPN_PASS=<pass> #Not required if using secrets
     secrets:
       - NORDVPN_CREDS

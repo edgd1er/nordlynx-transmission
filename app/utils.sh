@@ -187,21 +187,30 @@ startNordlynxVpn() {
   #Use secrets if present
   #hide credentials even in debug
   set +x
+  #Use secrets if present
   if [ -e /run/secrets/NORDVPN_CREDS ]; then
     mapfile -t -n 2 vars </run/secrets/NORDVPN_CREDS
-    if [[ ${#vars[*]} -ne 2 ]] || [[ ${vars[0]} == ${vars[1]} ]]; then
-      fatal_error "OVPN: openVPN login and password are identical. Exiting"
+    if [[ ${#vars[*]} -eq 2 ]]; then
+      NORDVPN_LOGIN=${vars[0]}
+      NORDVPN_PASS=${vars[1]}
+    elif [[ ${#vars[*]} -eq 1 ]]; then
+      log "WARNING: Only one line found, assuming token."
+      NORDVPN_LOGIN=${vars[0]}
+      NORDVPN_PASS=''
     fi
-    NORDVPN_LOGIN=${vars[0]}
-    NORDVPN_PASS=${vars[1]}
-    [[ "${NORDVPN_LOGIN}" == "${NORDVPN_PASS}" ]] && fatal_error "ERROR, credentials shoud have two lines (login/password), one found."
   fi
 
-  if [ -z ${NORDVPN_LOGIN} ] || [ -z ${NORDVPN_PASS} ]; then
+  if [[ -z ${NORDVPN_LOGIN:-''} ]]; then
     log "ERROR: NORDVPN: **********************"
-    log "ERROR: NORDVPN: empty user or password"
+    log "ERROR: NORDVPN: empty user or token   "
     log "ERROR: NORDVPN: **********************"
     exit 1
+  fi
+
+  if [[ -z ${NORDVPN_PASS:-''} ]]; then
+    logincmd="login --token ${NORDVPN_LOGIN}"
+  else
+    logincmd="login --username ${NORDVPN_LOGIN} --password ${NORDVPN_PASS}"
   fi
 
   log "INFO: NORDVPN: starting nordvpn daemon"
@@ -217,7 +226,8 @@ startNordlynxVpn() {
   done
 
   # login: already logged in return 1
-  res=$(nordvpn login --username ${NORDVPN_LOGIN} --password "${NORDVPN_PASS}" || true)
+  res="$(nordvpn ${logincmd})" || true
+  # restore debug if required.
   [[ ${DEBUG} != "false" ]] && set -x || true
   if [[ "${res}" != *"Welcome to NordVPN"* ]] && [[ "${res}" != *"You are already logged in."* ]]; then
     log "ERROR: NORDVPN: cannot login: ${res}"
@@ -484,10 +494,10 @@ getTinyListen() {
   grep -oP "(?<=^Listen )[0-9\.]+" /etc/tinyproxy/tinyproxy.conf
 }
 
-changeTinyListenAddress(){
+changeTinyListenAddress() {
   listen_ip4=$(getTinyListen)
   current_ip4=$(getEthIp)
-  if [[ ! -z ${listen_ip4} ]] && [[ ! -z ${current_ip4} ]] && [[ ${listen_ip4} != ${current_ip4} ]] ; then
+  if [[ ! -z ${listen_ip4} ]] && [[ ! -z ${current_ip4} ]] && [[ ${listen_ip4} != ${current_ip4} ]]; then
     #dante ecoute sur le nom de l'interface eth0
     echo "Tinyproxy: changing listening address from ${listen_ip4} to ${current_ip4}"
     sed -i "s/${listen_ip4}/${current_ip4}/" /etc/tinyproxy/tinyproxy.conf

@@ -73,7 +73,7 @@ sysclts:
 * [GROUP](https://api.nordvpn.com/v1/servers/groups): Double VPN, Onion Over VPN, Ultra fast TV, Anti DDoS, Dedicated IP, Standard VPN servers, Netflix USA, P2P, Obfuscated Servers, Europe, The Americas, Asia Pacific, Africa,  the Middle East and India, Anycast DNS, Geo DNS, Grafana, Kapacitor, Socks5 Proxy, FastNetMon,  although many categories are possible,  p2p seems more adapted.
 * TECHNOLOGY: ikev2, openvpn_udp, openvpn_tcp, socks, proxy, pptp, l2tp, openvpn_xor_udp, openvpn_xor_tcp, proxy_cybersec, proxy_ssl, proxy_ssl_cybersec, ikev2_v6, openvpn_udp_v6, openvpn_tcp_v6, wireguard_udp, openvpn_udp_tls_crypt, openvpn_tcp_tls_crypt, openvpn_dedicated_udp, openvpn_dedicated_tcp, skylark, mesh_relay. `curl -LSs https://api.nordvpn.com/v1/technologies | jq '[.[].identifier] | @csv' | tr -d '\\"'`
 * CITY:  Tirana, Buenos Aires, Adelaide, Brisbane, Melbourne, Perth, Sydney, Vienna, Brussels, Sarajevo, Sao Paulo, Sofia, Montreal, Toronto, Vancouver, Santiago, San Jose, Zagreb, Nicosia, Prague, Copenhagen, Tallinn, Helsinki, Marseille, Paris, Tbilisi, Berlin, Frankfurt, Athens, Hong Kong, Budapest, Reykjavik, Mumbai, Jakarta, Dublin, Tel Aviv, Milan, Tokyo, Riga, Vilnius, Steinsel, Kuala Lumpur, Mexico, Chisinau, Amsterdam, Auckland, Skopje, Oslo, Warsaw, Lisbon, Bucharest, Belgrade, Singapore, Bratislava, Ljubljana, Johannesburg, Seoul, Madrid, Stockholm, Zurich, Taipei, Bangkok, Istanbul, Kyiv, Dubai, Edinburgh, Glasgow, London, Manchester, Atlanta, Buffalo, Charlotte, Chicago, Dallas, Denver, Kansas City, Los Angeles, Manassas, Miami, New York, Phoenix, Saint Louis, Salt Lake City, San Francisco, Seattle, Hanoi. `curl -LSs https://api.nordvpn.com/v1/servers/countries | jq '[.[].cities[].name ] | @csv' | tr -d '\\"'`
-* NORDVPN_USER=email (As of 21/07/25,  Service credentials are not allowed.)
+* NORDVPN_LOGIN=email (As of 22/12/23, login with token should be preferred.)
 * NORDVPN_PASS=pass
 * CYBER_SEC,  default off
 * KILLERSWITCH,  default on
@@ -87,7 +87,7 @@ sysclts:
 
 ```bash
 docker run -it --rm --cap-add NET_ADMIN -p 1081:1080 -p 8888:8888 -p 9091:9091
- --device /dev/net/tun -e NORDVPN_USER=<email> -e NORDVPN_PASS='<pass>' -e COUNTRY=Poland
+ --device /dev/net/tun -e NORDVPN_LOGIN=<email> -e NORDVPN_PASS='<pass>' -e COUNTRY=Poland
  -e edgd1er/nordlynx-transmission
 ```
 
@@ -118,17 +118,16 @@ services:
       - CONNECT=uk
       - TECHNOLOGY=NordLynx
       - DEBUG=
-      - NORDVPN_USER=<email> #Not required if using secrets
+      - NORDVPN_LOGIN=<email> #Not required if using secrets
       - NORDVPN_PASS=<pass> #Not required if using secrets
     secrets:
-      - NORDVPN_LOGIN
-      - NORDVPN_PASS
+      - NORDVPN_CREDS
 
 secrets:
-    NORDVPN_LOGIN:
-        file: ./nordvpn_login
-    NORDVPN_PASS:
-        file: ./nordvpn_pwd
+    NORDVPN_CREDS:
+        file: ./nordvpn_creds # login and password on two separate line, or token in oneline.
+    NORDVPN_PRIVKEY:
+        file: ./nordvpn_privkey # wireguard extracted private key
 ```
 
 
