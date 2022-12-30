@@ -67,26 +67,35 @@ testProxies() {
   return ${FAILED}
 }
 
+getInterfacesInfo(){
+  docker compose exec ${CONTAINER} bash -c "ip -j a |jq  '.[]|select(.ifname|test(\"wg0|tun|nordlynx\"))|.ifname'"
+  docker compose exec ${CONTAINER} echo -e "eth0: $(ip -j a | jq -r '.[] |select(.ifname=="eth0")| .addr_info[].local')\n wg0: $(ip -j a | jq -r '.[] |select(.ifname=="wg0")| .addr_info[].local')\nnordlynx: $(ip -j a | jq -r '.[] |select(.ifname=="nordlynx")| .addr_info[].local')"
+  docker compose exec ${CONTAINER} bash -c 'echo "nordlynx conf: $(wg showconf nordlynx 2>/dev/null)"'
+  docker compose exec ${CONTAINER} bash -c 'echo "wg conf: $(wg showconf wg0 2>/dev/null)"'
+}
+
 #Main
 [[ -e /.dockerenv ]] && PROXY_HOST=
 
 #Check ports
-[[ $1 == "-t" ]] && BUILD=0
+[[ ${1:-''} == "-t" ]] && BUILD=0 || BUILD=1
 myIp=$(curl -m5 -sq https://ifconfig.me/ip)
+
 if [[ "localhost" == "${PROXY_HOST}" ]] && [[ 1 -eq ${BUILD} ]]; then
   buildAndWait
   echo "***************************************************"
   echo "Testing container"
   echo "***************************************************"
-  docker compose exec ${CONTAINER} bash -c "ip -j a |jq  '.[]|select(.ifname|test(\"wg0|tun|nordlynx\"))|.ifname'"
-  docker compose exec ${CONTAINER} wg showconf nordlynx 2>/dev/null
-  docker compose exec ${CONTAINER} wg showconf wg0 2>/dev/null
-  docker compose exec ${CONTAINER} echo -e "eth0: $(ip -j a | jq -r '.[] |select(.ifname=="eth0")| .addr_info[].local')\n wg0: $(ip -j a | jq -r '.[] |select(.ifname=="wg0")| .addr_info[].local')\nnordlynx: $(ip -j a | jq -r '.[] |select(.ifname=="nordlynx")| .addr_info[].local')"
   # check returned IP through http and socks proxy
   testProxies
+  getInterfacesInfo
   [[ 1 -eq ${BUILD} ]] && docker compose down
 else
+  echo "***************************************************"
+  echo "Testing container"
+  echo "***************************************************"
   # check returned IP through http and socks proxy
   testProxies
+  getInterfacesInfo
 fi
 

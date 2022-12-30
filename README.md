@@ -8,7 +8,7 @@
 
 # nordlynx-transmission
 
-Nordvpn client's version: 3.15.2 (22/12/07)
+Nordvpn client's version: 3.15.3 (22/12/29)
 
 /!\ please consider this project as a work in progress especially concerning iptables/leak management when not using nordvpn client (ie: NORDVPN_PRIVKEY found). 
 

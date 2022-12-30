@@ -20,7 +20,7 @@ RUN apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
 FROM debian:bullseye-slim AS debian-base
 
 ARG aptcacher=''
-ARG VERSION=3.15.2
+ARG VERSION=3.15.3
 ARG TZ=America/Chicago
 ARG NORDVPNCLIENT_INSTALLED=1
 
