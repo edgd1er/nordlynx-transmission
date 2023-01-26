@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.3
-FROM alpine:3.15 AS TransmissionUIs
+FROM alpine:3.16 AS TransmissionUIs
 
 #hadolint ignore=DL3018,DL3008,DL4006
 RUN apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
@@ -20,7 +20,7 @@ RUN apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
 FROM debian:bullseye-slim AS debian-base
 
 ARG aptcacher=''
-ARG VERSION=3.15.3
+ARG VERSION=3.15.4
 ARG TZ=America/Chicago
 ARG NORDVPNCLIENT_INSTALLED=1
 

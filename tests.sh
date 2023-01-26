@@ -69,7 +69,10 @@ testProxies() {
 
 getInterfacesInfo(){
   docker compose exec ${CONTAINER} bash -c "ip -j a |jq  '.[]|select(.ifname|test(\"wg0|tun|nordlynx\"))|.ifname'"
-  docker compose exec ${CONTAINER} echo -e "eth0: $(ip -j a | jq -r '.[] |select(.ifname=="eth0")| .addr_info[].local')\n wg0: $(ip -j a | jq -r '.[] |select(.ifname=="wg0")| .addr_info[].local')\nnordlynx: $(ip -j a | jq -r '.[] |select(.ifname=="nordlynx")| .addr_info[].local')"
+  itf=$(docker compose exec ${CONTAINER} ip -j a)
+  echo eth0:$(echo $itf| jq -r '.[] |select(.ifname=="eth0")| .addr_info[].local')
+  echo wg0: $(echo $itf| jq -r '.[] |select(.ifname=="wg0")| .addr_info[].local')
+  echo nordlynx: $(echo $itf| jq -r '.[] |select(.ifname=="nordlynx")| .addr_info[].local')
   docker compose exec ${CONTAINER} bash -c 'echo "nordlynx conf: $(wg showconf nordlynx 2>/dev/null)"'
   docker compose exec ${CONTAINER} bash -c 'echo "wg conf: $(wg showconf wg0 2>/dev/null)"'
 }
