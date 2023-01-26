@@ -244,6 +244,7 @@ startNordlynxVpn() {
   log "INFO: NORDVPN: connect: ${res}"
   if [[ "${res}" != *"You are connected to"* ]]; then
     log "ERROR: NORDVPN: cannot connect to ${GROUP} ${CONNECT}"
+    sleep 5
     res=$(nordvpn connect ${CONNECT}) || true
     log "INFO: NORDVPN: connecting to ${CONNECT}"
     [[ "${res}" != *"You are connected to"* ]] && log "ERROR: NORDVPN: cannot connect to ${CONNECT}" && exit 1
