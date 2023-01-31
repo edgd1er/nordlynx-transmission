@@ -58,7 +58,7 @@ jobs:
             type=ref,event=branch,enable=${{ github.event_name != 'schedule' }}
             type=ref,event=tag
       - name: Build and push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: .
