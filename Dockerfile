@@ -20,7 +20,7 @@ RUN apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
 FROM debian:bullseye-slim AS debian-base
 
 ARG aptcacher=''
-ARG VERSION=3.15.4
+ARG VERSION=3.15.5
 ARG TZ=America/Chicago
 ARG NORDVPNCLIENT_INSTALLED=1
 
@@ -56,7 +56,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && apt-get update && export DEBIAN_FRONTEND=non-interactive \
     && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
     ca-certificates tzdata dante-server net-tools unzip unrar-free bc tar \
-    transmission transmission-common transmission-daemon transmission-cli tinyproxy ufw iputils-ping vim \
+    tinyproxy ufw iputils-ping vim \
     # wireguard \
     wireguard-tools \
     #ui start \
@@ -83,7 +83,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
 FROM debian-base AS debian-dev
 
 ARG aptcacher=''
-ARG VERSION=3.15.2
+ARG VERSION=3.15.5
 ARG TZ=America/Chicago
 ARG NORDVPNCLIENT_INSTALLED=1
 ARG TBT_VERSION
@@ -130,11 +130,10 @@ RUN if [[ "dev" == "${TBT_VERSION}" ]]; then \
 
 #build from tagged version
 #hadolint ignore=DL3003,DL3008,DL3047,SC2053
-RUN if [[ ${TBT_VERSION} =~ [34] ]]; then \
-    if [[ ${TBT_VERSION} =~ 3 ]]; then \
-      URL=https://github.com/transmission/transmission-releases/raw/master/transmission-3.00.tar.xz \
-      && apt-get install -y --no-install-recommends libgtkmm-3.0-dev gettext qttools5-dev build-essential cmake libcurl4-openssl-dev libssl-dev; \
-    else URL=https://github.com/transmission/transmission-releases/raw/master/transmission-4.0.0-beta.1+r98cf7d9b3c.tar.xz; fi \
+RUN if [[ ${TBT_VERSION} =~ [4] ]]; then \
+    apt-get install -y --no-install-recommends libgtkmm-3.0-dev gettext qttools5-dev build-essential cmake libcurl4-openssl-dev libssl-dev; \
+    #URL=https://github.com/transmission/transmission-releases/raw/master/transmission-4.0.0.tar.xz \
+    URL=https://github.com/transmission/transmission/releases/download/4.0.0/transmission-4.0.0.tar.xz \
     && echo "Fetching and building ${URL##*/} of transmission" \
     && mkdir -p /var/tmp/transmission \
     && wget --no-cache -O- ${URL} | tar -Jx -C /var/tmp/transmission --strip-components=1 \
@@ -177,7 +176,7 @@ RUN echo "cpu: ${TARGETPLATFORM}" \
     && dpkg -i /var/tmp/transmission_*_$(dpkg --print-architecture).deb  ;\
     else echo "Installing transmission from repository" \
     && apt-get update && apt-cache search transmission \
-    && apt-get install -y --no-install-recommends transmission-daemon transmission-cli; fi \
+    && apt-get install -y --no-install-recommends transmission-daemon transmission-cli ; fi \
     && ln -s /usr/share/transmission/web/style /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/images /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/javascript /opt/transmission-ui/transmission-web-control \
