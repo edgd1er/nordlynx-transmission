@@ -20,7 +20,7 @@ RUN apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
 FROM debian:bullseye-slim AS debian-base
 
 ARG aptcacher=''
-ARG VERSION=3.15.5
+ARG VERSION=3.16.0
 ARG TZ=America/Chicago
 ARG NORDVPNCLIENT_INSTALLED=1
 
@@ -83,7 +83,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
 FROM debian-base AS debian-dev
 
 ARG aptcacher=''
-ARG VERSION=3.15.5
+ARG VERSION=3.16.0
 ARG TZ=America/Chicago
 ARG NORDVPNCLIENT_INSTALLED=1
 ARG TBT_VERSION
@@ -132,8 +132,7 @@ RUN if [[ "dev" == "${TBT_VERSION}" ]]; then \
 #hadolint ignore=DL3003,DL3008,DL3047,SC2053
 RUN if [[ ${TBT_VERSION} =~ [4] ]]; then \
     apt-get install -y --no-install-recommends libgtkmm-3.0-dev gettext qttools5-dev build-essential cmake libcurl4-openssl-dev libssl-dev; \
-    #URL=https://github.com/transmission/transmission-releases/raw/master/transmission-4.0.0.tar.xz \
-    URL=https://github.com/transmission/transmission/releases/download/4.0.0/transmission-4.0.0.tar.xz \
+    URL=https://github.com/transmission/transmission/releases/download/${TBT_VERSION}/transmission-${TBT_VERSION}.tar.xz \
     && echo "Fetching and building ${URL##*/} of transmission" \
     && mkdir -p /var/tmp/transmission \
     && wget --no-cache -O- ${URL} | tar -Jx -C /var/tmp/transmission --strip-components=1 \
