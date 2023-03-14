@@ -5,7 +5,7 @@ SHELL:=bash
 
 # Enable BuildKit for Docker build
 export DOCKER_BUILDKIT:=1
-NVPNVER:="3.15.4"
+NVPNVER:="3.16.0"
 APTCACHER:="192.168.53.208"
 #APTCACHER:="192.168.43.61"
 
