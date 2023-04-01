@@ -20,7 +20,7 @@ RUN apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
 FROM debian:bullseye-slim AS debian-base
 
 ARG aptcacher=''
-ARG VERSION=3.16.0
+ARG VERSION=3.16.1
 ARG TZ=America/Chicago
 ARG NORDVPNCLIENT_INSTALLED=1
 
@@ -83,7 +83,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
 FROM debian-base AS debian-dev
 
 ARG aptcacher=''
-ARG VERSION=3.16.0
+ARG VERSION=3.16.1
 ARG TZ=America/Chicago
 ARG NORDVPNCLIENT_INSTALLED=1
 ARG TBT_VERSION

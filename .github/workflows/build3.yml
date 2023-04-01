@@ -11,7 +11,7 @@ jobs:
       image-name: edgd1er/nordlynx-transmission
       build-context: '.'
       tbt_version: "3.00"
-      version: "3.16.0"
+      version: "3.16.1"
       tag: "v3"
     secrets: inherit
 
@@ -21,6 +21,6 @@ jobs:
       image-name: edgd1er/nordlynx-transmission
       build-context: '.'
       tbt_version: "4.0.2"
-      version: "3.16.0"
+      version: "3.16.1"
       tag: "v4"
     secrets: inherit
