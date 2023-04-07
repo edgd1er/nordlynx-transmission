@@ -42,7 +42,7 @@ if [ "${ARCHI}" == "amd64" ]; then
   #PTF=linux/arm/v7,linux/arm/v6
   # load is not compatible with multi arch build
   if [[ $WHERE == "--push" ]]; then
-    PTF+=,linux/amd64,linux/arm64/v8
+    PTF+=,linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
     #enable multi arch build framework
     if [ $isMultiArch -eq 0 ]; then
       enableMultiArch

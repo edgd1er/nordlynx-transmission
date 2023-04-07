@@ -1,15 +1,17 @@
-name: check nordvpn version
+name: check apps version
 on:
   schedule:
     - cron: "0 7 * * *"
   workflow_dispatch:
 
 env:
+  LIBEVENT_VERSION: 2.1.12-stable
+  TRANSMISSION_VERSION: 4.0.2
   NORDVPN_VERSION: 3.16.1
   NORDVPN_PACKAGE: https://repo.nordvpn.com/deb/nordvpn/debian/dists/stable/main/binary-amd64/Packages
 
 jobs:
-  check_version:
+  check_nordvpn_version:
     runs-on: ubuntu-latest
     steps:
       - name: get latest version
@@ -17,7 +19,36 @@ jobs:
         run: |
           ver=$(curl -s "${{ env.NORDVPN_PACKAGE }}" | grep -oP "(?<=Version: )(.*)" | sort -t. -n -k1,1 -k2,2 -k3,3 | tail -1)
           echo "image version: ${{ env.NORDVPN_VERSION }}, latest nordvpn version: ${ver}"
-          curl -L https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_${ver}_amd64.changelog
           if [[ ${{ env.NORDVPN_VERSION }} != ${ver} ]]; then 
+            curl -L https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_${ver}_amd64.changelog
             exit 1
           fi
+  check-lib_event_version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: get libevent's latest version
+        id: getlatestversion
+        run: |
+          ver=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/libevent/libevent/releases/latest" | jq -r .tag_name )
+          echo "libevent build version: ${{ env.LIBEVENT_VERSION }}, latest github libevent version: ${ver}"
+          if [[ ${{ env.LIBEVENT_VERSION }} != ${ver#*-} ]]; then exit 1; fi
+
+  check-transmission_version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: get transmission's latest version
+        id: getlatestversion
+        run: |
+          ver=$(curl -s "https://api.github.com/repos/transmission/transmission/releases/latest" | jq -r .tag_name )
+          echo "transmission build version: ${{ env.TRANSMISSION_VERSION }}, latest github transmission version: ${ver}"
+          if [[ ${{ env.TRANSMISSION_VERSION }} != ${ver} ]]; then exit 1; fi
+
+  check-transmission-dev-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: get transmission's dev latest version
+        id: getdevlatestversion
+        run: |
+          devver=$(curl -s "https://raw.githubusercontent.com/transmission/transmission/main/CMakeLists.txt" | grep -oP "(?<=TR_VERSION_(MAJOR|MINOR|PATCH) \")[^\"]+" | tr '\n' '.' | grep -oP "[0-9]+\.[0-9]+\.[0-9]+")
+          echo "transmission build version: ${{ env.TRANSMISSION_VERSION }}, latest github transmission dev version: ${devver}"
+          if [[ ${{ env.TRANSMISSION_VERSION }} != ${devver} ]]; then exit 1; fi

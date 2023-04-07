@@ -22,8 +22,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ toJson(steps.meta.outputs.json) }}
     steps:
       - name: checkout code
         uses: actions/checkout@v3
@@ -63,9 +61,4 @@ jobs:
           cache-to: type=gha,mode=max
       - name: set_print
         run: |
-          docker inspect ${{ inputs.image-name }}:${{ inputs.tag }}
-      - name: debug
-        run: |
-          env
-          echo "ttags=${{ fromJson(steps.meta.outputs.json).tags }}" >> $GITHUB_OUTPUT
-        shell: bash
+          docker buildx imagetools inspect ${{ inputs.image-name }}:${{ inputs.tag }}

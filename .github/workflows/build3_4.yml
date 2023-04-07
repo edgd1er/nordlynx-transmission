@@ -1,8 +1,9 @@
-name: v3 Image Builds
+name: v3 v4 Image Builds from template
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build-v3-images:

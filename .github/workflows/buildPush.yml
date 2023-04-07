@@ -1,15 +1,15 @@
 name: build multi-arch images
-
+# previous build job: no v3 v4 for transmission
 on:
-  schedule:
-    - cron: '0 6 * * *'
+  #schedule:
+  #  - cron: '0 6 * * *'
   workflow_dispatch:
-  push:
-    branches:
-      - dev
-      - main
-    paths-ignore:
-      - '.github/**'
+  #push:
+  #  branches:
+  #    - dev
+  #    - main
+  #  paths-ignore:
+  #    - '.github/**'
 env:
   IMAGE: nordlynx-transmission
   VERSION: "3.16.1"
