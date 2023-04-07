@@ -8,7 +8,7 @@
 
 # nordlynx-transmission
 
-[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.16.1_amd64.changelog): 3.16.1 (21/03/24)
+[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.16.1_amd64.changelog): 3.16.1 (24/03/21)
 
 
 /!\ please consider this project as a work in progress especially concerning iptables/leak management when not using nordvpn client (ie: NORDVPN_PRIVKEY found). 
@@ -18,6 +18,11 @@ purpose: compare wireguard and nordlynx speed transmisssion.
 This is a docker container that connects to the recommended NordVPN servers through nordvpn client or wireguard,  and starts a SOCKS5 proxy (dante),  an http proxy (tinyproxy) and torrent client (transmission).
 plain wireguard and nordlynx's wireguard technology are available.
 
+this container is build for amd64, arm64, arm/v7, arm/v6, two tags are available.
+As of 08/04/22, V3/v4 will be built regularly, as v4 is the version I use. I stopped the automatic launch for latest's workflow building.
+v3: transmission v3 + latest nordvpn client.
+v4: transmission v4 + latest nordvpn client.
+latest: transmission v3 + latest nordvpn client.
 
 Whenever the connection is lost,  nordvpn client has a killswitch to obliterate the connection.
     

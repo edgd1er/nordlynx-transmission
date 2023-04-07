@@ -45,18 +45,20 @@ WORKDIR /app
 RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
     echo "alias checkip='curl -sm 10 \"https://zx2c4.com/ip\"'" | tee -a ~/.bashrc \
-    && echo "alias checkhttp='curl -sm 10 -x http://\${HOSTNAME}:\${WEBPROXY_PORT:-8888} \"https://ifconfig.me/ip\"'" | tee -a ~/.bashrc \
-    && echo "alias checksocks='curl -sm10 -x socks5://\${HOSTNAME}:1080 \"https://ifconfig.me/ip\"'" | tee -a ~/.bashrc \
+    && echo "alias checkhttp='curl -sm 10 -x http://\${HOSTNAME}:\${WEBPROXY_PORT:-8888} \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
+    && echo "alias checksocks='curl -sm10 -x socks5://\${HOSTNAME}:1080 \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
     && echo "alias checkvpn='curl -sm 10 \"https://api.nordvpn.com/vpn/check/full\" | jq -r .status'" | tee -a ~/.bashrc \
     && echo "alias getcheck='curl -sm 10 \"https://api.nordvpn.com/vpn/check/full\" | jq . '" | tee -a ~/.bashrc \
     && echo "alias gettiny='grep -vP \"(^$|^#)\" /etc/tinyproxy/tinyproxy.conf'" | tee -a ~/.bashrc \
     && echo "alias getdante='grep -vP \"(^$|^#)\" /etc/dante.conf'" | tee -a ~/.bashrc \
+    && echo "alias dltest='curl http://ipv4.bouygues.testdebit.info/10M.iso -o /dev/null'" | tee -a ~/.bashrc \
+    && echo "alias testalias='while read -r line; do echo \$line;eval \$line;done <<<\$(grep ^alias ~/.bashrc | cut -f 2 -d"'"'"'" | tee -a ~/.bashrc \
     # allow to install resolvconf
     && echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
     && apt-get update && export DEBIAN_FRONTEND=non-interactive \
     && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
     ca-certificates tzdata dante-server net-tools unzip unrar-free bc tar \
-    tinyproxy ufw iputils-ping vim \
+    tinyproxy ufw iputils-ping vim libdeflate0 libevent-2.1-7 libnatpmp1 libminiupnpc17 \
     # wireguard \
     wireguard-tools \
     #ui start \
@@ -79,74 +81,6 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     # patch wg-quick script to remove the need for running in privilegied mode
     && sed -i "s:sysctl -q net.ipv4.conf.all.src_valid_mark=1:echo skipping setting net.ipv4.conf.all.src_valid_mark:" /usr/bin/wg-quick
 
-
-FROM debian-base AS debian-dev
-
-ARG aptcacher=''
-ARG VERSION=3.16.1
-ARG TZ=America/Chicago
-ARG NORDVPNCLIENT_INSTALLED=1
-ARG TBT_VERSION
-
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
-#hadolint ignore=DL3008
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libcurl4-openssl-dev libssl-dev \
-    pkg-config build-essential checkinstall wget tar zlib1g-dev intltool jq bash cmake g++ make python3 \
-    gettext libdeflate-dev libevent-dev libfmt-dev libminiupnpc-dev \
-    libnatpmp-dev libpsl-dev ninja-build xz-utils clang-format clang clang-tidy git
-
-WORKDIR /var/tmp
-#hadolint ignore=DL3003,DL3008,SC3010
-RUN if [[ "dev" == "${TBT_VERSION}" ]]; then \
-    echo "Fetching and building ${TBT_VERSION} of transmission" \
-    && git clone --depth 1 --branch main https://github.com/transmission/transmission \
-    && cd transmission  \
-    && git submodule update --init && mkdir build \
-    && cd build && cmake \
-        -S src \
-        -B obj \
-        -G Ninja \
-        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-        -DCMAKE_CXX_COMPILER='/usr/bin/clang++' \
-        -DCMAKE_CXX_FLAGS='-gdwarf-4 -fno-omit-frame-pointer -fsanitize=address,leak,undefined' \
-        -DCMAKE_C_COMPILER='/usr/bin/clang' \
-        -DCMAKE_C_FLAGS='-gdwarf-4 -fno-omit-frame-pointer -fsanitize=address,leak,undefined' \
-        -DCMAKE_INSTALL_PREFIX=pfx \
-        -DENABLE_CLI=ON \
-        -DENABLE_DAEMON=ON \
-        -DENABLE_GTK=OFF \
-        -DENABLE_MAC=OFF \
-        -DENABLE_QT=OFF \
-        -DENABLE_TESTS=ON \
-        -DENABLE_UTILS=ON \
-        -DENABLE_WEB=ON \
-        -DRUN_CLANG_TIDY=ON .. \
-        && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. \
-        # && cp /var/tmp/transmission-${TBT_VERSION}/*.deb /var/tmp/ ;fi \
-        && make \
-        && make install \
-        ; fi
-
-#build from tagged version
-#hadolint ignore=DL3003,DL3008,DL3047,SC2053
-RUN if [[ ${TBT_VERSION} =~ [4] ]]; then \
-    apt-get install -y --no-install-recommends libgtkmm-3.0-dev gettext qttools5-dev build-essential cmake libcurl4-openssl-dev libssl-dev; \
-    URL=https://github.com/transmission/transmission/releases/download/${TBT_VERSION}/transmission-${TBT_VERSION}.tar.xz \
-    && echo "Fetching and building ${URL##*/} of transmission" \
-    && mkdir -p /var/tmp/transmission \
-    && wget --no-cache -O- ${URL} | tar -Jx -C /var/tmp/transmission --strip-components=1 \
-    && cd transmission && mkdir build && cd build \
-    && ls -al .. \
-    && pwd \
-    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. \
-    && make \
-    && make install \
-    && cd /var/tmp/transmission/build \
-    && echo "version: ${TBT_VERSION} / ${TBT_VERSION##*v}" \
-    && if [[ dev == ${TBT_VERSION}  ]]; then TBT_VERSION=v4; fi \
-    && checkinstall -y -D --pkgname transmission  --pakdir /var/tmp --pkgversion="${TBT_VERSION##*v}.0.0" ; fi
-
 FROM debian-base AS new
 
 ARG aptcacher=''
@@ -161,21 +95,19 @@ VOLUME /data
 VOLUME /config
 
 COPY --from=TransmissionUIs /opt/transmission-ui /opt/transmission-ui
-COPY --from=debian-dev /var/tmp/*.deb /var/tmp/
-#COPY --from=debian-dev /usr/local/bin/ /usr/local/bin/
-#COPY --from=debian-dev /usr/local/share/ /usr/local/share/
+COPY out/*.deb /var/tmp/
 
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+SHELL ["/bin/bash", "-o", "pipefail", "-xc"]
 
 #hadolint ignore=DL3008,SC2046
-RUN echo "cpu: ${TARGETPLATFORM}" \
-    && if [ -f /var/tmp/transmission_*_$(dpkg --print-architecture).deb ]; then \
-    ls -alh /var/tmp/*.deb \
-    && echo "Installing transmission ${TBT_VERSION}" \
-    && dpkg -i /var/tmp/transmission_*_$(dpkg --print-architecture).deb  ;\
-    else echo "Installing transmission from repository" \
+RUN echo "cpu: ${TARGETPLATFORM}" ;\
+    if [[ ${TBT_VERSION} =~ 3 ]]; then echo "Installing transmission from repository" \
     && apt-get update && apt-cache search transmission \
-    && apt-get install -y --no-install-recommends transmission-daemon transmission-cli ; fi \
+    && apt-get install -y --no-install-recommends transmission-daemon transmission-cli ;fi \
+    && if [[ ${TBT_VERSION} =~ 4 ]]; then echo "Installing transmission ${TBT_VERSION}" \
+    && ls -alh /var/tmp/*.deb \
+    ; if [[ ! -f /var/tmp/transmission_*_$(dpkg --print-architecture).deb ]]; then echo "deb package not found, error" ;fi \
+    && dpkg -i /var/tmp/transmission_*_$(dpkg --print-architecture).deb; fi \
     && ln -s /usr/share/transmission/web/style /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/images /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/javascript /opt/transmission-ui/transmission-web-control \
@@ -196,6 +128,7 @@ ENV GLOBAL_APPLY_PERMISSIONS=true \
     TRANSMISSION_DOWNLOAD_DIR=/data/completed \
     TRANSMISSION_INCOMPLETE_DIR=/data/incomplete \
     TRANSMISSION_WATCH_DIR=/data/watch \
+    TRANSMISSION_LOG_LEVEL="" \
     CREATE_TUN_DEVICE=true \
     ENABLE_UFW=false \
     UFW_ALLOW_GW_NET=false \

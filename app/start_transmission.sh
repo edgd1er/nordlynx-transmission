@@ -90,6 +90,16 @@ echo "Updating Transmission settings.json with values from env variables"
 # Ensure TRANSMISSION_HOME is created
 mkdir -p ${TRANSMISSION_HOME}
 
+case ${TRANSMISSION_LOG_LEVEL,,} in
+  "trace" | "debug" | "info" | "warn" | "error" | "critical")
+    echo "Will exec Transmission with '--log-level=${TRANSMISSION_LOG_LEVEL,,}' argument"
+    export TRANSMISSION_LOGGING="--log-level=${TRANSMISSION_LOG_LEVEL,,}"
+    ;;
+  *)
+    export TRANSMISSION_LOGGING=""
+    ;;
+esac
+
 . /app/transmission/userSetup.sh
 
 su --preserve-environment ${RUN_AS} -s /usr/bin/python3 /app/transmission/updateSettings.py /app/transmission/default-settings.json ${TRANSMISSION_HOME}/settings.json || exit 1
@@ -110,8 +120,14 @@ else
   LOG="--logfile ${TRANSMISSION_HOME}/transmission.log"
 fi
 
+if [[ -f /usr/local/bin/transmission-daemon ]]; then
+  transbin='/usr/local/bin'
+else
+  transbin='/usr/bin'
+fi
+
 log "STARTING TRANSMISSION with ${nordlynx_ip} mounted on ${vpn_itf}, container ip is ${container_ip}"
-su --preserve-environment ${RUN_AS} -s /bin/bash -c "/usr/bin/transmission-daemon -f -g ${TRANSMISSION_HOME} ${LOG}"
+su --preserve-environment ${RUN_AS} -s /bin/bash -c "${transbin}/transmission-daemon ${TRANSMISSION_LOG_LEVEL,,} -f -g ${TRANSMISSION_HOME} ${LOG}"
 
 #TODO execute post start.
 # If transmission-post-start.sh exists, run it
