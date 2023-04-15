@@ -1,0 +1,79 @@
+FROM debian:bullseye-slim as base
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+#hadolint ignore=DL3008
+RUN  if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
+    echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
+    apt-get update && apt-get install -y --no-install-recommends software-properties-common \
+    && apt-add-repository non-free && apt-get update && apt-get install -y --no-install-recommends \
+    dumb-init openvpn privoxy procps socat libevent-2.1-7  libnatpmp1 libminiupnpc17 \
+    tzdata dnsutils iputils-ping ufw openssh-client git jq curl wget unrar unzip bc libdeflate0 \
+    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+
+FROM base as devbase
+ARG TBT_VERSION=3.00
+ARG LIBEVENT_VERSION=2.1.12-stable
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+#hadolint ignore=DL3018,DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libcurl4-openssl-dev libssl-dev \
+    pkg-config build-essential checkinstall wget tar zlib1g-dev intltool jq bash cmake g++ make python3 \
+    gettext libdeflate-dev libevent-dev libfmt-dev libminiupnpc-dev \
+    libnatpmp-dev libpsl-dev ninja-build xz-utils clang-format clang clang-tidy git \
+    && curl -fsSL https://deb.nodesource.com/setup_current.x | bash - \
+    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+
+WORKDIR /var/tmp/
+#hadolint ignore=DL3003,DL3008
+RUN if [[ "dev" == "${TBT_VERSION}" ]]; then \
+    curl -fsSL https://deb.nodesource.com/setup_current.x | bash - \
+    && apt-get update && apt-get install -y --no-install-recommends nodejs \
+    && echo "Fetching and building ${TBT_VERSION} of transmission" \
+    && git clone --depth 1 --branch main https://github.com/transmission/transmission \
+    && cd transmission  \
+    && git submodule update --init && mkdir build \
+    && cd build && cmake \
+        -S src \
+        -B obj \
+        -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DCMAKE_CXX_COMPILER='/usr/bin/clang++' \
+        -DCMAKE_CXX_FLAGS='-gdwarf-4 -fno-omit-frame-pointer -fsanitize=address,leak,undefined' \
+        -DCMAKE_C_COMPILER='/usr/bin/clang' \
+        -DCMAKE_C_FLAGS='-gdwarf-4 -fno-omit-frame-pointer -fsanitize=address,leak,undefined' \
+        -DCMAKE_INSTALL_PREFIX=pfx \
+        -DENABLE_CLI=ON \
+        -DENABLE_DAEMON=ON \
+        -DENABLE_GTK=OFF \
+        -DENABLE_MAC=OFF \
+        -DENABLE_QT=OFF \
+        -DENABLE_TESTS=ON \
+        -DENABLE_UTILS=ON \
+        -DENABLE_WEB=ON \
+        -DRUN_CLANG_TIDY=ON .. \
+        && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. \
+        && make \
+        && make install \
+        && checkinstall -y -D --pkgname transmission  --pakdir /var/tmp --pkgversion="4.0.x" \
+        ; fi
+
+#build from tagged version
+#hadolint ignore=DL3003,DL3018,DL3008
+RUN if [[ ${TBT_VERSION} =~ ^4 ]]; then \
+    apt-get update && apt-get install -y --no-install-recommends libgtkmm-3.0-dev gettext qttools5-dev build-essential cmake libcurl4-openssl-dev libssl-dev gnupg; \
+    URL=https://github.com/transmission/transmission/releases/download/${TBT_VERSION}/transmission-${TBT_VERSION}.tar.xz \
+    && echo "Fetching and building ${URL##*/} of transmission" \
+    && mkdir -p /var/tmp/transmission \
+    && curl -s ${URL} | tar -Jx -C /var/tmp/transmission --strip-components=1 \
+    && mkdir -p transmission/build && cd transmission/build \
+    && ls -al .. \
+    && pwd \
+    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. \
+    && make \
+    && make install \
+    && echo "version: ${TBT_VERSION} / ${TBT_VERSION##*v}" \
+    && checkinstall -y -D --pkgname transmission  --pakdir /var/tmp --pkgversion="${TBT_VERSION}"; fi \
+    && ls -al /var/tmp
+
+
+FROM scratch as exporting
+#hadolint ignore=DL3018,DL3008
+COPY --from=devbase /var/tmp/*.deb /

@@ -6,7 +6,8 @@ on:
 
 env:
   LIBEVENT_VERSION: 2.1.12-stable
-  TRANSMISSION_VERSION: 4.0.2
+  TRANSMISSION_VERSION: 4.0.3
+  TRANSMISSION_DEV_VERSION: 4.1.0
   NORDVPN_VERSION: 3.16.1
   NORDVPN_PACKAGE: https://repo.nordvpn.com/deb/nordvpn/debian/dists/stable/main/binary-amd64/Packages
 
@@ -50,5 +51,5 @@ jobs:
         id: getdevlatestversion
         run: |
           devver=$(curl -s "https://raw.githubusercontent.com/transmission/transmission/main/CMakeLists.txt" | grep -oP "(?<=TR_VERSION_(MAJOR|MINOR|PATCH) \")[^\"]+" | tr '\n' '.' | grep -oP "[0-9]+\.[0-9]+\.[0-9]+")
-          echo "transmission build version: ${{ env.TRANSMISSION_VERSION }}, latest github transmission dev version: ${devver}"
-          if [[ ${{ env.TRANSMISSION_VERSION }} != ${devver} ]]; then exit 1; fi
+          echo "transmission build version: ${{ env.TRANSMISSION_DEV_VERSION }}, latest github transmission dev version: ${devver}"
+          if [[ ${{ env.TRANSMISSION_DEV_VERSION }} != ${devver} ]]; then exit 1; fi
