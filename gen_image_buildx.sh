@@ -14,6 +14,8 @@ PROGRESS=plain #text auto plain
 PROGRESS=auto  #text auto plain
 CACHE=""
 WHERE="--load"
+#TBT_VERSION=4.0.3
+TBT_VERSION=dev
 
 #exit on error
 set -xe
@@ -30,7 +32,7 @@ enableMultiArch() {
 [[ "$HOSTNAME" != phoebe ]] && aptCacher=""
 [[ ! -f ${DKRFILE} ]] && echo -e "\nError, Dockerfile is not found\n" && exit 1
 
-#WHERE="--push"
+WHERE="--push"
 #CACHE="--no-cache"
 
 NAME=${DUSER}/${IMAGE}
@@ -52,16 +54,28 @@ fi
 
 #PTF=linux/amd64
 #PTF=linux/arm/v7
-PTF=linux/amd64
+#PTF=linux/amd64
 #enable multi arch build framework
 echo -e "\nbuilding $TAG, name $NAME using cache $CACHE and apt cache $aptCacher \n\n"
 
-#Fix push errors
-#docker buildx create --driver-opt image=moby/buildkit:master
-
-docker buildx build --platform linux/arm64 -f Dockerfile.deb --build-arg TBT_VERSION=4.0.3 --progress auto --build-arg aptCacher=192.168.53.208 -load -o out .
-
-docker buildx build ${WHERE} --platform ${PTF} -f ${DKRFILE}  $CACHE --progress $PROGRESS \
-  --build-arg aptCacher=$aptCacher -t $TAG .
-
-#docker manifest inspect $TAG | grep -E "architecture|variant"
+# c= container, p=package
+todo=${1:-c}
+todo=${todo#-}
+case ${todo} in
+  p)
+    PTF=linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+    echo generating debian package
+    docker buildx build --platform ${PTF} -f ${DKRFILE}.deb --build-arg TBT_VERSION=$TBT_VERSION \
+  $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher -o out .
+  find out/ -mindepth 2 -type f -print -exec mv {} out/ \;
+  ;;
+  c)
+    echo building images
+    docker buildx build ${WHERE} --platform ${PTF} -f ${DKRFILE} --build-arg TBT_VERSION=$TBT_VERSION \
+  $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher -t $TAG .
+  #done
+    docker manifest inspect $TAG | grep -E "architecture|variant"
+  ;;
+  *)
+    ;;
+esac
