@@ -59,6 +59,8 @@ echo -e "\nbuilding $TAG, name $NAME using cache $CACHE and apt cache $aptCacher
 #Fix push errors
 #docker buildx create --driver-opt image=moby/buildkit:master
 
+docker buildx build --platform linux/arm64 -f Dockerfile.deb --build-arg TBT_VERSION=4.0.3 --progress auto --build-arg aptCacher=192.168.53.208 -load -o out .
+
 docker buildx build ${WHERE} --platform ${PTF} -f ${DKRFILE}  $CACHE --progress $PROGRESS \
   --build-arg aptCacher=$aptCacher -t $TAG .
 
