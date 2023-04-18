@@ -33,7 +33,7 @@ getVpnProtectionStatus() {
 }
 
 getVpnItf() {
-  ip -j a | jq -r '.[].ifname | match("wg0|nordlynx|tun")| .string'
+  ip -j a | jq -r '.[].ifname | match("wg0|nordlynx|nordtun")| .string'
 }
 
 getEthIp() {
@@ -177,13 +177,22 @@ getNordlynxIp() {
 }
 
 extractLynxConf() {
+  [[ ${GENERATE_WIREGUARD_CONF} != true ]] && return || true
+  if [[ ${TECHNOLOGY,,} != nordlynx ]]; then
+    log "Info: NORDPVN: Connection is not a Nordlynx (wireguard) type. Cannot extract wireguard information"
+    return
+  fi
+  if [[ -z $(command -v wg) ]]; then
+    log "Error: NORDPVN: wireguard kernel and tools not installed. installing required packages, using additionnal 317 MB of disk space."
+    apt-get update && apt-get install -y --no-install-recommends wireguard wireguard-tools
+  fi
   wg showconf nordlynx >/etc/wireguard/wg0.conf
   chmod 600 /etc/wireguard/wg0.conf
   log "Wireguard configuration written to /etc/wireguard/wg0.conf"
   cat /etc/wireguard/wg0.conf
 }
 
-startNordlynxVpn() {
+startNordVpn() {
   #Use secrets if present
   #hide credentials even in debug
   set +x
