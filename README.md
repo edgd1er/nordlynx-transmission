@@ -73,7 +73,9 @@ sysclts:
  ```
   might be needed,  if nordvpn cannot change the settings itself.
 
-* TECHNOLOGY=[NordLynx]/[OpenVPN],  default: NordLynx
+* ANALYTICS: [off/on], default on, send anonymous aggregate data: crash reports, OS version, marketing performance, and feature usage data
+* TECHNOLOGY: [NordLynx]/[OpenVPN], default: NordLynx (wireguard like)
+* [OBFUSCATE](https://nordvpn.com/features/obfuscated-servers/): [off/on], default off, on hide vpn's use.
 * CONNECT = [country]/[server]/[country_code]/[city] or [country] [city],  if none provide you will connect to the recommended server.
 * [COUNTRY](https://api.nordvpn.com/v1/servers/countries) define the exit country. Albania, Argentina, Australia, Austria, Belgium, Bosnia_And_Herzegovina, Brazil, Bulgaria, Canada, Chile, Costa_Rica, Croatia, Cyprus, Czech_Republic, Denmark, Estonia, Finland, France, Georgia, Germany, Greece, Hong_Kong, Hungary, Iceland, India, Indonesia, Ireland, Israel, Italy, Japan, Latvia, Lithuania, Luxembourg, Malaysia, Mexico, Moldova, Netherlands, New_Zealand, North_Macedonia, Norway, Poland, Portugal, Romania, Serbia, Singapore, Slovakia, Slovenia, South_Africa, South_Korea, Spain, Sweden, Switzerland, Taiwan, Thailand, Turkey, Ukraine, United_Kingdom, United_States, Vietnam `curl -LSs https://api.nordvpn.com/v1/servers/countries | jq '[.[].name ] | @csv' | tr -d '\\"' | tr ' ' '_'`
 * [GROUP](https://api.nordvpn.com/v1/servers/groups): Double VPN, Onion Over VPN, Ultra fast TV, Anti DDoS, Dedicated IP, Standard VPN servers, Netflix USA, P2P, Obfuscated Servers, Europe, The Americas, Asia Pacific, Africa,  the Middle East and India, Anycast DNS, Geo DNS, Grafana, Kapacitor, Socks5 Proxy, FastNetMon,  although many categories are possible,  p2p seems more adapted.

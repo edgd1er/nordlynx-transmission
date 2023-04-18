@@ -51,7 +51,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && echo "alias getcheck='curl -sm 10 \"https://api.nordvpn.com/vpn/check/full\" | jq . '" | tee -a ~/.bashrc \
     && echo "alias gettiny='grep -vP \"(^$|^#)\" /etc/tinyproxy/tinyproxy.conf'" | tee -a ~/.bashrc \
     && echo "alias getdante='grep -vP \"(^$|^#)\" /etc/dante.conf'" | tee -a ~/.bashrc \
-    && echo "alias dltest='curl http://ipv4.bouygues.testdebit.info/10M.iso -o /dev/null'" | tee -a ~/.bashrc \
+    && echo "alias dltest='curl http://appliwave.testdebit.info/100M.iso -o /dev/null'" | tee -a ~/.bashrc \
     && echo "alias testalias='while read -r line; do echo \$line;eval \$line;done <<<\$(grep ^alias ~/.bashrc | cut -f 2 -d"'"'"'" | tee -a ~/.bashrc \
     # allow to install resolvconf
     && echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
@@ -119,6 +119,12 @@ COPY --chmod=755 app/ /app/
 
 HEALTHCHECK --interval=5m --timeout=20s --start-period=1m CMD /app/healthcheck.sh
 
+ENV GENERATE_WIREGUARD_CONF=false
+ENV ANALYTICS=on
+ENV KILLERSWITCH=on
+ENV CYBER_SEC=off
+ENV TECHNOLOGY=nordlynx
+ENV OBFUSCATE=off
 ENV GLOBAL_APPLY_PERMISSIONS=true \
     TRANSMISSION_WEB_UI=transmission-web-control \
     TRANSMISSION_HOME=/config/transmission-home \

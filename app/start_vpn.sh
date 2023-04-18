@@ -16,7 +16,6 @@ CONNECT=${CONNECT// /_}
 [[ "${GROUPID:-''}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
 [[ -n ${GROUP} ]] && GROUP="--group ${GROUP}"
 
-[[ -f /app/utils.sh ]] && source /app/utils.sh || true
 
 #Functions
 set_iptables() {
@@ -42,10 +41,15 @@ setIPV6() {
 #setIPV6 ${NOIPV6}
 
 setup_nordvpn() {
-  nordvpn set technology ${TECHNOLOGY:-'NordLynx'}
+  nordvpn set analytics ${ANALYTICS}
+  nordvpn set technology ${TECHNOLOGY,,}
   nordvpn set cybersec ${CYBER_SEC:-'off'}
   nordvpn set killswitch ${KILLERSWITCH:-'on'}
   nordvpn set ipv6 ${NOIPV6} 2>/dev/null
+  #obfuscate only available to openvpn(tcp or udp)
+  if [[ ${OBFUSCATE,,} == "on" ]] && [[ ${TECHNOLOGY,,} = 'openvpn' ]]; then
+    nordvpn set obfuscate ${OBFUSCATE:-'off'}
+  fi
   [[ -n ${DNS:-''} ]] && nordvpn set dns ${DNS//[;,]/ }
   if [[ -z ${DOCKER_NET:-''} ]]; then
     DOCKER_NET="$(getEthCidr)"
@@ -68,28 +72,37 @@ setup_nordvpn() {
   [[ ${DEBUG} ]] && nordvpn -version && nordvpn settings
 }
 
+mkTun() {
+  # Create a tun device see: https://www.kernel.org/doc/Documentation/networking/tuntap.txt
+  if [ ! -c /dev/net/tun ]; then
+    log "INFO: OVPN: Creating tun interface /dev/net/tun"
+    mkdir -p /dev/net
+    mknod /dev/net/tun c 10 200
+    chmod 600 /dev/net/tun
+  fi
+}
+
 #Main
 #Overwrite docker dns as it may fail with specific configuration (dns on server)
 echo "nameserver 1.1.1.1" >/etc/resolv.conf
-# No more updated
-# checkLatest
-# [[ 0 -ne $? ]] && checkLatestApt
+
+#Define if not defined
+TECHNOLOGY=${TECHNOLOGY:-'nordlynx'}
+OBFUSCATE=${OBFUSCATE:-'off'}
+
+# checkLatest commented as no more updated
 checkLatestApt
+
 [[ -z ${CONNECT} ]] && exit 1
 [[ ! -d ${RDIR} ]] && mkdir -p ${RDIR}
 
-#Main
-#Overwrite docker dns as it may fail with specific configuration (dns on server)
-echo "nameserver 1.1.1.1" >/etc/resolv.conf
-
-[[ -z ${CONNECT} ]] && exit 1
-
+mkTun
 UNP_IP=$(getCurrentWanIp)
 set_iptables DROP
 setTimeZone
 set_iptables ACCEPT
 
-if [ -f /run/secrets/NORDVPN_PRIVKEY ]; then
+if [[ -f /run/secrets/NORDVPN_PRIVKEY ]] && [[ ${TECHNOLOGY,,} == "nordlynx" ]]; then
   log "INFO: NORDLYNX: private key found, going for wireguard."
   getJsonFromNordApi
   if [[ ! -s /etc/resolv.conf ]]; then
@@ -101,9 +114,9 @@ if [ -f /run/secrets/NORDVPN_PRIVKEY ]; then
   enforce_iptables
 elif [[ ${NORDVPNCLIENT_INSTALLED} -eq 1 ]]; then
   log "Info: NORDLYNX: no wireguard private key found, connecting with nordvpn client."
-  startNordlynxVpn
+  startNordVpn
   enforce_proxies_nordvpn
-  extractLynxConf
+  [[ ${TECHNOLOGY,,} == "nordlynx" ]] && extractLynxConf || true
 else
   log "Error: NORDLYNX: no nordvpn client, no wireguard private key, exiting."
   exit
