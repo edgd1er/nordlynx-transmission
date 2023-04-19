@@ -63,8 +63,8 @@ todo=${1:-c}
 todo=${todo#-}
 case ${todo} in
   p)
-    PTF=linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
-    echo generating debian package
+    [[ ${TBT_VERSION} == "dev" ]] && PTF=linux/amd64 || PTF=linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+    echo generating debian package for ${PTF}
     docker buildx build --platform ${PTF} -f ${DKRFILE}.deb --build-arg TBT_VERSION=$TBT_VERSION \
   $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher -o out .
   find out/ -mindepth 2 -type f -print -exec mv {} out/ \;
