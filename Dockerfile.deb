@@ -28,31 +28,19 @@ RUN if [[ "dev" == "${TBT_VERSION}" ]]; then \
     && apt-get update && apt-get install -y --no-install-recommends nodejs \
     && echo "Fetching and building ${TBT_VERSION} of transmission" \
     && git clone --depth 1 --branch main https://github.com/transmission/transmission \
-    && cd transmission  \
+    && cd transmission \
+    && ver=$(grep -oP "(?<=TR_VERSION_(MAJOR|MINOR|PATCH) \")[^\"]+" CMakeLists.txt | tr '\n' '.' | grep -oP "[0-9]+\.[0-9]+\.[0-9]+") \
     && git submodule update --init && mkdir build \
-    && cd build && cmake \
-        -S src \
-        -B obj \
-        -G Ninja \
-        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-        -DCMAKE_CXX_COMPILER='/usr/bin/clang++' \
+    && cd build && cmake -S src -B obj -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_COMPILER='/usr/bin/clang++' \
         -DCMAKE_CXX_FLAGS='-gdwarf-4 -fno-omit-frame-pointer -fsanitize=address,leak,undefined' \
-        -DCMAKE_C_COMPILER='/usr/bin/clang' \
-        -DCMAKE_C_FLAGS='-gdwarf-4 -fno-omit-frame-pointer -fsanitize=address,leak,undefined' \
-        -DCMAKE_INSTALL_PREFIX=pfx \
-        -DENABLE_CLI=ON \
-        -DENABLE_DAEMON=ON \
-        -DENABLE_GTK=OFF \
-        -DENABLE_MAC=OFF \
-        -DENABLE_QT=OFF \
-        -DENABLE_TESTS=ON \
-        -DENABLE_UTILS=ON \
-        -DENABLE_WEB=ON \
-        -DRUN_CLANG_TIDY=ON .. \
+        -DCMAKE_C_COMPILER='/usr/bin/clang' -DCMAKE_C_FLAGS='-gdwarf-4 -fno-omit-frame-pointer -fsanitize=address,leak,undefined' \
+        -DCMAKE_INSTALL_PREFIX=pfx -DENABLE_CLI=ON -DENABLE_DAEMON=ON -DENABLE_GTK=OFF -DENABLE_MAC=OFF -DENABLE_QT=OFF -DENABLE_TESTS=ON \
+        -DENABLE_UTILS=ON -DENABLE_WEB=ON -DRUN_CLANG_TIDY=ON .. \
         && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. \
         && make \
         && make install \
-        && checkinstall -y -D --pkgname transmission  --pakdir /var/tmp --pkgversion="4.0.x" \
+        && checkinstall -y -D --pkgname transmission  --pakdir /var/tmp --pkgversion=${ver} \
         ; fi
 
 #build from tagged version

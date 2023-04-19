@@ -126,7 +126,7 @@ else
   transbin='/usr/bin'
 fi
 
-log "STARTING TRANSMISSION with ${nordlynx_ip} mounted on ${vpn_itf}, container ip is ${container_ip}"
+log "STARTING TRANSMISSION $(${transbin}/transmission-remote -V 2>&1|grep -oP "(?<=remote )[0-9.]+") with ${nordlynx_ip} mounted on ${vpn_itf}, container ip is ${container_ip}"
 su --preserve-environment ${RUN_AS} -s /bin/bash -c "${transbin}/transmission-daemon ${TRANSMISSION_LOG_LEVEL,,} -f -g ${TRANSMISSION_HOME} ${LOG}"
 
 #TODO execute post start.

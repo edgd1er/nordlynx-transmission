@@ -125,6 +125,7 @@ ENV KILLERSWITCH=on
 ENV CYBER_SEC=off
 ENV TECHNOLOGY=nordlynx
 ENV OBFUSCATE=off
+ENV PROTOCOL=udp
 ENV GLOBAL_APPLY_PERMISSIONS=true \
     TRANSMISSION_WEB_UI=transmission-web-control \
     TRANSMISSION_HOME=/config/transmission-home \
