@@ -43,7 +43,7 @@ setIPV6() {
 setup_nordvpn() {
   nordvpn set analytics ${ANALYTICS}
   nordvpn set technology ${TECHNOLOGY,,}
-  [[ ${TECHNOLOGY,,} = 'openvpn' ]] && nordvpn set protocol ${PROTOCOL:-'udp}
+  [[ ${TECHNOLOGY,,} = 'openvpn' ]] && nordvpn set protocol ${PROTOCOL:-'udp'}
   nordvpn set cybersec ${CYBER_SEC:-'off'}
   nordvpn set killswitch ${KILLERSWITCH:-'on'}
   nordvpn set ipv6 ${NOIPV6} 2>/dev/null
