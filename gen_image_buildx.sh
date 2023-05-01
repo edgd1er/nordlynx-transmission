@@ -8,7 +8,7 @@ DKRFILE=${localDir}/Dockerfile
 ARCHI=$(dpkg --print-architecture)
 IMAGE=nordvpn-proxy
 DUSER=edgd1er
-[[ "${ARCHI}" != "armhf" ]] && isMultiArch=$(docker buildx ls | grep -c arm)
+[[ "${ARCHI}" != "armhf" ]] && isMultiArch=$(docker buildx ls | grep -c amd-arm)
 aptCacher=$(ip route get 1 | awk '{print $7}')
 PROGRESS=plain #text auto plain
 PROGRESS=auto  #text auto plain
@@ -23,8 +23,8 @@ set -e -u -o pipefail
 #fonctions
 enableMultiArch() {
   docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-  docker buildx rm amd-arm
-  docker buildx create --use --name amd-arm --driver-opt image=moby/buildkit:master --platform=linux/amd64,linux/arm64,linux/386,linux/arm/v7,linux/arm/v6
+  [[ 0 -ne $(docker buildx ls | grep -c amd-arm) ]] && docker buildx rm amd-arm || true
+  docker buildx create --use --name amd-arm --driver=docker-container --driver-opt image=moby/buildkit:master --platform=linux/amd64,linux/arm64,linux/386,linux/arm/v7,linux/arm/v6 #--attest type=provenance,mode=min
   docker buildx inspect --bootstrap amd-arm
 }
 
@@ -55,7 +55,12 @@ fi
 # c= container, p=package
 todo=${1:-c}
 todo=${todo#-}
-case ${todo} in
+for ((i = 0; i < ${#todo}; i++)); do
+  case ${todo:$i:1} in
+  v)
+    echo verbose mode
+    set -x
+    ;;
   a)
     #no nodejs for v6
     if [[ ${TBT_VERSION} == "dev" ]]; then
@@ -66,24 +71,25 @@ case ${todo} in
     ;;
   p)
     if [[ ${TBT_VERSION} == "dev" ]]; then
-          PTF=${PTFARG:-'linux/amd64'}
+      PTF=${PTFARG:-'linux/amd64'}
     fi
     echo "generating debian package for ${PTF} in ${TBT_VERSION} version"
-    docker buildx build --platform ${PTF} -f ${DKRFILE}.deb --build-arg TBT_VERSION=$TBT_VERSION \
-  $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher -o out .
-  find out/ -mindepth 2 -type f -print -exec mv {} out/ \;
-  ;;
+    docker buildx build --builder=amd-arm --platform ${PTF} -f ${DKRFILE}.deb --build-arg TBT_VERSION=$TBT_VERSION \
+      $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher --provenance false -o out .
+    find out/ -mindepth 2 -type f -print -exec mv {} out/ \;
+    ;;
   c)
     #enable multi arch build framework
     echo -e "building $TAG, name $NAME using cache $CACHE and apt cache $aptCacher for ${PTF} in ${TBT_VERSION}"
-    docker buildx build ${WHERE} --platform ${PTF} -f ${DKRFILE} --build-arg TBT_VERSION=$TBT_VERSION \
-  $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher -t $TAG .
-  #done
+    #docker buildx use amd-arm
+    docker buildx build --builder=amd-arm ${WHERE} --platform ${PTF} -f ${DKRFILE} --build-arg TBT_VERSION=$TBT_VERSION \
+      $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher --provenance false -t $TAG .
+    #done
     docker manifest inspect $TAG | grep -E "architecture|variant"
-  ;;
+    ;;
   h)
     echo -e "script:\t${0}\n-a\tbuild for all plateforms\n-c\tBuild image\n-p\tBuild packages"
     ;;
-  *)
-    ;;
-esac
+  *) ;;
+  esac
+done

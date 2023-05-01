@@ -10,6 +10,8 @@ env:
   TRANSMISSION_DEV_VERSION: 4.1.0
   NORDVPN_VERSION: 3.16.2
   NORDVPN_PACKAGE: https://repo.nordvpn.com/deb/nordvpn/debian/dists/stable/main/binary-amd64/Packages
+  TWCV: v1.6.26
+  TICV: v1.8.0
 
 jobs:
   check_nordvpn_version:
@@ -40,7 +42,7 @@ jobs:
       - name: get transmission's latest version
         id: getlatestversion
         run: |
-          ver=$(curl -s "https://api.github.com/repos/transmission/transmission/releases/latest" | jq -r .tag_name )
+          ver=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/transmission/transmission/releases/latest" | jq -r .tag_name )
           echo "transmission build version: ${{ env.TRANSMISSION_VERSION }}, latest github transmission version: ${ver}"
           if [[ ${{ env.TRANSMISSION_VERSION }} != ${ver} ]]; then exit 1; fi
 
@@ -53,3 +55,16 @@ jobs:
           devver=$(curl -s "https://raw.githubusercontent.com/transmission/transmission/main/CMakeLists.txt" | grep -oP "(?<=TR_VERSION_(MAJOR|MINOR|PATCH) \")[^\"]+" | tr '\n' '.' | grep -oP "[0-9]+\.[0-9]+\.[0-9]+")
           echo "transmission build version: ${{ env.TRANSMISSION_DEV_VERSION }}, latest github transmission dev version: ${devver}"
           if [[ ${{ env.TRANSMISSION_DEV_VERSION }} != ${devver} ]]; then exit 1; fi
+
+  check-ui-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: get ui's latest version
+        id: getuilatestversion
+        run: |
+          ver=$(curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" "https://api.github.com/repos/transmission-web-control/transmission-web-control/releases/latest" | jq -r .tag_name)
+          echo -e "transmission-web-control version: ${{ env.TWCV }}, latest github transmission version: ${ver}"
+          if [[ ${{ env.TWCV }} != ${ver} ]]; then echo ERROR; fi
+          ver=$(curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" "https://api.github.com/repos/6c65726f79/Transmissionic/releases/latest" | jq -r .tag_name)
+          echo -e "Transmissionic version: ${{ env.TICV }}, latest github transmission version: ${ver}"
+          if [[ ${{ env.TICV }} != ${ver} ]]; then echo ERROR; fi
