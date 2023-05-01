@@ -9,19 +9,27 @@ jobs:
   build-v3-images:
     uses: ./.github/workflows/build-template.yml
     with:
-      image-name: edgd1er/nordlynx-transmission
       build-context: '.'
       tbt_version: "3.00"
       version: "3.16.2"
-      tag: "v3"
+      tag: "edgd1er/nordlynx-transmission:v3"
     secrets: inherit
 
   build-v4-images:
     uses: ./.github/workflows/build-template.yml
     with:
-      image-name: edgd1er/nordlynx-transmission
       build-context: '.'
       tbt_version: "4.0.3"
       version: "3.16.2"
-      tag: "v4"
+      tag: "edgd1er/nordlynx-transmission:v4,edgd1er/nordlynx-transmission:latest"
+    secrets: inherit
+
+  build-v4dev-images:
+    uses: ./.github/workflows/build-template.yml
+    with:
+      build-context: '.'
+      tbt_version: "dev"
+      version: "3.16.2"
+      tag: "edgd1er/nordlynx-transmission:dev"
+      ptf: "linux/amd64,linux/arm64,linux/arm/v7"
     secrets: inherit

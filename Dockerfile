@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1.3
-FROM alpine:3.16 AS TransmissionUIs
-
-#hadolint ignore=DL3018,DL3008,DL4006
-RUN apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
+FROM --platform=$BUILDPLATFORM alpine:3.17 AS TransmissionUIs
+ARG TWCV="v1.6.26"
+ARG TICV="v1.8.0"
+#hadolint ignore=DL3018,DL3008,DL4006,DL4001
+RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
     && echo "Install Shift" \
     && wget --no-cache -qO- https://github.com/killemov/Shift/archive/master.tar.gz | tar xz -C /opt/transmission-ui \
     && mv /opt/transmission-ui/Shift-master /opt/transmission-ui/shift \
@@ -15,7 +16,11 @@ RUN apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
     && mv /opt/transmission-ui/kettu-master /opt/transmission-ui/kettu \
     && echo "Install Transmission-Web-Control" \
     && mkdir /opt/transmission-ui/transmission-web-control \
-    && wget --no-cache -qO- "$(wget --no-cache -qO- https://api.github.com/repos/ronggang/transmission-web-control/releases/latest | jq --raw-output '.tarball_url')" | tar -C /opt/transmission-ui/transmission-web-control/ --strip-components=2 -xz
+    && wget --no-cache -qO- "https://github.com/transmission-web-control/transmission-web-control/releases/download/${TWCV}/dist.tar.gz" | tar -C /opt/transmission-ui/transmission-web-control/ --strip-components=2 -xz \
+    #&& ver=$(curl -s "https://api.github.com/repos/6c65726f79/Transmissionic/releases/latest" | jq -r .tag_name) \
+    && echo "Install Transmissionic ${TICV}" \
+    && wget -qO- "https://github.com/6c65726f79/Transmissionic/releases/download/${TICV}/Transmissionic-webui-${TICV}.zip" | unzip -d /opt/transmission-ui/ - \
+    && mv /opt/transmission-ui/web /opt/transmission-ui/transmissionic
 
 FROM debian:bullseye-slim AS debian-base
 
@@ -52,12 +57,12 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && echo "alias gettiny='grep -vP \"(^$|^#)\" /etc/tinyproxy/tinyproxy.conf'" | tee -a ~/.bashrc \
     && echo "alias getdante='grep -vP \"(^$|^#)\" /etc/dante.conf'" | tee -a ~/.bashrc \
     && echo "alias dltest='curl http://appliwave.testdebit.info/100M.iso -o /dev/null'" | tee -a ~/.bashrc \
-    && echo "alias testalias='while read -r line; do echo \$line;eval \$line;done <<<\$(grep ^alias ~/.bashrc | cut -f 2 -d"'"'"'" | tee -a ~/.bashrc \
+    #&& echo "alias testalias='while read -r line; do echo \$line;eval \$line;done <<<\$(grep ^alias ~/.bashrc | cut -f 2 -d"'"'"'" | tee -a ~/.bashrc \
     # allow to install resolvconf
     && echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
     && apt-get update && export DEBIAN_FRONTEND=non-interactive \
     && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
-    ca-certificates tzdata dante-server net-tools unzip unrar-free bc tar \
+    ca-certificates tzdata dante-server net-tools unzip unrar-free bc tar bash\
     tinyproxy ufw iputils-ping vim libdeflate0 libevent-2.1-7 libnatpmp1 libminiupnpc17 \
     # wireguard \
     wireguard-tools \
@@ -70,10 +75,10 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && wget -nv -t10 -O /tmp/nordrepo.deb https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn-release_1.0.0_all.deb \
     && apt-get install -qqy --no-install-recommends /tmp/nordrepo.deb && apt-get update \
     && apt-get install -qqy --no-install-recommends -y nordvpn="${VERSION}" \
-    && apt-get remove -y wget nordvpn-release \
+    #&& apt-get remove -y wget nordvpn-release \
     && mkdir -p /run/nordvpn \
     #chmod a+x /app/*.sh  \
-    && addgroup --system vpn && useradd -lNms /usr/bash -u "${NUID:-1000}" -G nordvpn,vpn nordclient \
+    && addgroup --system vpn && useradd -lNms /bin/bash -u "${NUID:-1000}" -G nordvpn,vpn nordclient \
     && apt-get clean all && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     #transmission user
     && groupmod -g 1000 users && useradd -u 911 -U -d /config -s /bin/false abc && usermod -G users abc \
@@ -95,24 +100,34 @@ VOLUME /data
 VOLUME /config
 
 COPY --from=TransmissionUIs /opt/transmission-ui /opt/transmission-ui
-COPY out/*.deb /var/tmp/
+COPY out/transmission_*.deb /tmp/
 
-SHELL ["/bin/bash", "-o", "pipefail", "-xc"]
+SHELL ["/bin/bash", "-o", "pipefail", "-xcu"]
 
-#hadolint ignore=DL3008,SC2046
-RUN echo "cpu: ${TARGETPLATFORM}" ;\
-    if [[ ${TBT_VERSION} =~ 3 ]]; then echo "Installing transmission from repository" \
-    && apt-get update && apt-cache search transmission \
-    && apt-get install -y --no-install-recommends transmission-daemon transmission-cli ;fi \
-    && if [[ ${TBT_VERSION} =~ 4 ]]; then echo "Installing transmission ${TBT_VERSION}" \
-    && ls -alh /var/tmp/*.deb \
-    ; if [[ ! -f /var/tmp/transmission_*_$(dpkg --print-architecture).deb ]]; then echo "deb package not found, error" ;fi \
-    && dpkg -i /var/tmp/transmission_*_$(dpkg --print-architecture).deb; fi \
+#hadolint ignore=DL3008,SC2046,SC2086
+RUN echo "cpu: ${TARGETPLATFORM}" \
+    ; if [[ "${TBT_VERSION}" =~ ^3 ]]; then echo "Installing transmission from repository" \
+    && apt-get update && apt-get install -y --no-install-recommends transmission-daemon transmission-cli \
     && ln -s /usr/share/transmission/web/style /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/images /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/javascript /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/index.html /opt/transmission-ui/transmission-web-control/index.original.html \
-    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+    ; fi \
+    ; if [[ "dev" == "${TBT_VERSION}" ]]; then export TBT_VERSION=4.1; fi \
+    ; if [[ "${TBT_VERSION}" =~ ^4 ]]; then echo "Installing transmission ${TBT_VERSION}" \
+    && ARCH="$(dpkg --print-architecture)" \
+    && ls -alh /tmp/transmission_${TBT_VERSION}* \
+    #&& debfile=(/tmp/transmission_${TBT_VERSION}*_${ARCH}.deb) \
+    && debfile=("$(ls /tmp/transmission_${TBT_VERSION}*_${ARCH}.deb)") \
+    #&& mapfile -t debfile <<< "${debfiles}" \
+    ; if [[ -z ${debfile[*]} ]]; then echo "deb package not found: transmission_${TBT_VERSION}*_${ARCH}.deb, error" ; else \
+    dpkg -c "${debfile[@]}" \
+    && dpkg -i "${debfile[@]}" \
+    && ln -s /usr/local/share/transmission/public_html/images /opt/transmission-ui/transmission-web-control/ \
+    && ln -s /usr/local/share/transmission/public_html/transmission-app.js /opt/transmission-ui/transmission-web-control/transmission-app.js \
+    && ln -s /usr/local/share/transmission/public_html/index.html /opt/transmission-ui/transmission-web-control/index.original.html \
+    ; fi ;fi \
+    ; rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
 
 COPY --chmod=755 etc/ /etc/
 COPY --chmod=755 app/ /app/

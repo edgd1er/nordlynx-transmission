@@ -31,7 +31,7 @@ buildAndWait() {
 }
 
 areProxiesPortOpened() {
-  for PORT in ${HTTP_PORT} ${SOCK_PORT}; do
+  for PORT in ${HTTP_PORT} ${SOCK_PORT} ${TRANS_PORT}; do
     msg="Test connection to port ${PORT}: "
     if [ 0 -eq $(echo "" | nc -v -q 2 ${PROXY_HOST} ${PORT} 2>&1 | grep -c "] succeeded") ]; then
       msg+=" Failed"
@@ -91,21 +91,14 @@ myIp=$(curl -m5 -sq https://ifconfig.me/ip)
 
 if [[ "localhost" == "${PROXY_HOST}" ]] && [[ 1 -eq ${BUILD} ]]; then
   buildAndWait
-  echo "***************************************************"
-  echo "Testing container"
-  echo "***************************************************"
-  # check returned IP through http and socks proxy
-  testProxies
-  getInterfacesInfo
-  getAliasesOutput
-  [[ 1 -eq ${BUILD} ]] && docker compose down
-else
-  echo "***************************************************"
-  echo "Testing container"
-  echo "***************************************************"
-  # check returned IP through http and socks proxy
-  testProxies
-  getInterfacesInfo
-  getAliasesOutput
 fi
+echo "***************************************************"
+echo "Testing container"
+echo "***************************************************"
+# check returned IP through http and socks proxy
+areProxiesPortOpened
+testProxies
+getInterfacesInfo
+getAliasesOutput
+if [[ "localhost" == "${PROXY_HOST}" ]] && [[ 1 -eq ${BUILD} ]]; then docker compose down; fi
 
