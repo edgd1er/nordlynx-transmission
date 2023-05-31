@@ -15,6 +15,12 @@ on:
       tag:
         required: true
         type: string
+      twcv:
+        required: true
+        type: string
+      ticv:
+        required: true
+        type: string
       ptf:
         required: false
         type: string

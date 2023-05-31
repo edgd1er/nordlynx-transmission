@@ -515,6 +515,11 @@ changeTinyListenAddress() {
   fi
 }
 
+getLatestTransmissionWebUI() {
+  newVer=$(curl -s "https://api.github.com/repos/transmission-web-control/transmission-web-control/releases/latest" | jq -r .tag_name )
+  wget --no-cache -qO- "https://github.com/transmission-web-control/transmission-web-control/releases/download/${newVer}/dist.tar.gz" | tar -C /opt/transmission-ui/transmission-web-control/ --strip-components=2 -xz
+}
+
 ## tests functions
 testhproxy() {
   PROXY_HOST=$(getEthIp)
