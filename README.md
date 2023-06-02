@@ -8,7 +8,7 @@
 
 # nordlynx-transmission
 
-[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.16.2_amd64.changelog): 3.16.2 (26/04/23)
+[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.16.3_amd64.changelog): 3.16.3 (02/06/23)
 
 
 /!\ please consider this project as a work in progress especially concerning iptables/leak management when not using nordvpn client (ie: NORDVPN_PRIVKEY found). 

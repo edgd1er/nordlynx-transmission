@@ -12,7 +12,7 @@ on:
   #    - '.github/**'
 env:
   IMAGE: nordlynx-transmission
-  VERSION: "3.16.2"
+  VERSION: "3.16.3"
   TAG: ${{ github.ref_name }}
   REVISION: ${{ github.ref_name }}
   USER: edgd1er
