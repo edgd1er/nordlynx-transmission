@@ -26,7 +26,7 @@ FROM debian:bullseye-slim AS debian-base
 
 ARG aptcacher=''
 ARG VERSION=3.16.3
-ARG TZ=America/Chicago
+ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 
 LABEL maintainer="edgd1er <edgd1er@htomail.com>" \
@@ -93,7 +93,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG TBT_VERSION=3.00
 ARG TARGETPLATFORM
 
-ENV TZ=${TZ}
+ENV TZ=${TZ:-Etc/UTC}
 ENV NORDVPNCLIENT_INSTALLED=${NORDVPNCLIENT_INSTALLED}
 
 VOLUME /data
@@ -134,6 +134,12 @@ COPY --chmod=755 app/ /app/
 
 HEALTHCHECK --interval=5m --timeout=20s --start-period=1m CMD /app/healthcheck.sh
 
+ENV DEBUG=false
+ENV DANTE_DEBUG=0
+ENV TRANSMISSION_DEBUG=false
+ENV NORDVPN_DEBUG=false
+ENV DANTE_DEBUG=0
+ENV DANTE_LOGLEVEL=error
 ENV GENERATE_WIREGUARD_CONF=false
 ENV ANALYTICS=on
 ENV KILLERSWITCH=on
