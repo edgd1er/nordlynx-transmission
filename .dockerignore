@@ -1,5 +1,5 @@
-nord*
 *.yml
 Makefile
 *.iml
 nordvpn_*
+rpc_creds

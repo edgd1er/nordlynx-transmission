@@ -129,14 +129,20 @@ services:
       - DEBUG=
       - NORDVPN_LOGIN=<email> #Not required if using secrets
       - NORDVPN_PASS=<pass> #Not required if using secrets
+      - TRANSMISSION_RPC_USERNAME=<username> # not required if using secrets
+      - TRANSMISSION_RPC_PASSWORD=<password> # not required if using secrets
     secrets:
       - NORDVPN_CREDS
+      - NORDVPN_PRIVKEY
+      - RPC_CREDS
 
 secrets:
     NORDVPN_CREDS:
-        file: ./nordvpn_creds # login and password on two separate line, or token in oneline.
+        file: ./nordvpn_creds # login and password on two separate lines, or token in oneline.
     NORDVPN_PRIVKEY:
         file: ./nordvpn_privkey # wireguard extracted private key
+    RPC_CREDS:
+        file: ./rpc_creds # login and password on two separate lines for transmission auth.
 ```
 
 
