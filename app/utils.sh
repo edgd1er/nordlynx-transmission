@@ -25,7 +25,8 @@ export INT
 export nordvpn_api="https://api.nordvpn.com"
 
 getCurrentWanIp() {
-  curl -s 'https://api.ipify.org?format=json' | jq .ip
+  myIp=$(curl -s -m 5 'ifconfig.me/ip')
+  [[ -n ${myIp} ]] && echo $myIp || curl -s -m 5 'https://api.ipify.org?format=json' | jq .ip
 }
 
 getVpnProtectionStatus() {
@@ -292,7 +293,7 @@ country_filter() {
     local country_id=$(echo ${json_countries} | jq --raw-output ".[] | select( (.name|test(\"^${country}$\";\"i\")) or (.code|test(\"^${country}$\";\"i\")) ) | .id" | head -n 1)
   fi
   if [[ -n ${country_id} ]]; then
-    log "Searching for country : ${country} (${country_id})"
+    #log "Searching for country : ${country} (${country_id})"
     echo "filters\[country_id\]=${country_id}&"
   else
     log "Warning, empty or invalid NORDVPN_COUNTRY (value=${1}). Ignoring this parameter. Possible values are:${possible_country_codes[*]} or ${possible_country_names[*]}."
@@ -310,7 +311,7 @@ city_filter() {
     city=${city// /-}
     local city_id=$(echo ${json_countries} | jq --raw-output ".[].cities[]| select(.name|test(\"${city}\";\"i\")) |.id")
     if [[ -n ${city_id} ]]; then
-      log "found city : ${city} (${city_id})"
+      #log "found city : ${city} (${city_id})"
       echo "filters\[city_id\]=${city_id}&"
     else
       log "Warning, empty or invalid NORDVPN_CITY (value=${city}). Ignoring this parameter. Possible values are:${possible_city_names[*]}"
@@ -330,7 +331,7 @@ group_filter() {
                           .identifier" | head -n 1)
   fi
   if [[ -n ${identifier} ]]; then
-    log "found group: ${category} (${identifier})"
+    #log "found group: ${category} (${identifier})"
     echo "filters\[servers_groups\]\[identifier\]=${identifier}&"
   else
     log "Warning, empty or invalid GROUP (value=${1//--group /}). ignoring this parameter. Possible values are: ${possible_categories[*]}."
@@ -347,7 +348,7 @@ technologies_filter() {
                           .id" | head -n 1)
   fi
   if [[ -n ${identifier} ]]; then
-    log "found technology: ${technology} (${identifier})"
+    #log "found technology: ${technology} (${identifier})"
     echo "filters\[servers_technologies\]\[id\]=${identifier}&"
   else
     log "Warning, empty or invalid GROUP (value=${*}). ignoring this parameter. Possible values are: ${possible_technologies[*]}."
