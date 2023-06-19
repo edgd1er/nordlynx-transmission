@@ -11,7 +11,7 @@ container_ip=$(getEthIp)
 nordlynx_ip=$(getNordlynxIp)
 vpn_itf=$(getVpnItf)
 env_var_script=/app/transmission/environment-variables.sh
-
+RPC_CREDS=/run/secrets/RPC_CREDS
 #Functions
 log() {
   #printf "${TIME_FORMAT} %b\n" "$*" >/dev/stderr
@@ -21,7 +21,23 @@ log() {
 # Source our persisted env variables from container startup
 #. env_var_scriptoi
 
-[[ -n ${TRANSMISSION_RPC_USERNAME} ]] && CREDS="-n \"${TRANSMISSION_RPC_USERNAME}:${TRANSMISSION_RPC_PASSWORD}\"" || CREDS=""
+if [[ -f ${RPC_CREDS} ]]; then
+  export TRANSMISSION_RPC_USERNAME=$(head -1 ${RPC_CREDS})
+  export TRANSMISSION_RPC_PASSWORD=$(tail -1 ${RPC_CREDS})
+  if [[ "${TRANSMISSION_RPC_USERNAME}" == "${TRANSMISSION_RPC_PASSWORD}" ]]; then
+    log "Error, TRANSMISSION_RPC_USERNAME and TRANSMISSION_RPC_PASSWORD have to be defined."
+  fi
+fi
+#cannot use https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md#233-authentication
+#as rpc-password is required to set daemon's password.
+#username and #password are set
+if [[ -n ${TRANSMISSION_RPC_USERNAME} ]] && [[ -n ${TRANSMISSION_RPC_PASSWORD} ]]; then
+  CREDS="-n \"${TRANSMISSION_RPC_USERNAME}:${TRANSMISSION_RPC_PASSWORD}\""
+else
+  #No creds set
+  CREDS=""
+fi
+
 while [ $(ps -ef | grep -c transmission-daemon) -gt 1 ]; do
   transmission-remote http://${container_ip}:${TRANSMISSION_RPC_PORT} ${CREDS} --exit
   sleep 1
@@ -43,17 +59,12 @@ if [[ ! ${TRANSMISSION_RPC_WHITELIST} =~ ${container_ip} ]]; then
   log "Adding ${dockerNet} to TRANSMISSION_RPC_WHITELIST (${TRANSMISSION_RPC_WHITELIST})"
   export TRANSMISSION_RPC_WHITELIST=${TRANSMISSION_RPC_WHITELIST},${dockerNet}
 fi
-# Persist transmission settings for use by transmission-daemon
-python3 /app/transmission/persistEnvironment.py ${env_var_script}
 
 log "Updating TRANSMISSION_BIND_ADDRESS_IPV4 to the ip of ${dev} : ${nordlynx_ip}"
 export TRANSMISSION_BIND_ADDRESS_IPV4="${nordlynx_ip}"
-# Also update the persisted settings in case it is already set. First remove any old value, then add new.
-sed -i '/TRANSMISSION_BIND_ADDRESS_IPV4/d' ${env_var_script}
 
 log "Updating TRANSMISSION_RPC_BIND_ADDRESS to the ip of ${container_ip},127.0.0.1"
 export TRANSMISSION_RPC_BIND_ADDRESS="${container_ip},127.0.0.1"
-sed -i '/TRANSMISSION_RPC_BIND_ADDRESS/d' ${env_var_script}
 
 #define UI
 if [[ "combustion" = "$TRANSMISSION_WEB_UI" ]]; then
@@ -91,16 +102,18 @@ echo "Updating Transmission settings.json with values from env variables"
 mkdir -p ${TRANSMISSION_HOME}
 
 case ${TRANSMISSION_LOG_LEVEL,,} in
-  "trace" | "debug" | "info" | "warn" | "error" | "critical")
-    echo "Will exec Transmission with '--log-level=${TRANSMISSION_LOG_LEVEL,,}' argument"
-    export TRANSMISSION_LOGGING="--log-level=${TRANSMISSION_LOG_LEVEL,,}"
-    ;;
-  *)
-    export TRANSMISSION_LOGGING=""
-    ;;
+"trace" | "debug" | "info" | "warn" | "error" | "critical")
+  echo "Will exec Transmission with '--log-level=${TRANSMISSION_LOG_LEVEL,,}' argument"
+  export TRANSMISSION_LOGGING="--log-level=${TRANSMISSION_LOG_LEVEL,,}"
+  ;;
+*)
+  export TRANSMISSION_LOGGING=""
+  ;;
 esac
 
-. /app/transmission/userSetup.sh
+# Persist transmission settings for use by transmission-daemon
+python3 /app/transmission/persistEnvironment.py ${env_var_script}
+source /app/transmission/userSetup.sh
 
 su --preserve-environment ${RUN_AS} -s /usr/bin/python3 /app/transmission/updateSettings.py /app/transmission/default-settings.json ${TRANSMISSION_HOME}/settings.json || exit 1
 log "sed'ing True to true"
@@ -126,7 +139,7 @@ else
   transbin='/usr/bin'
 fi
 
-log "STARTING TRANSMISSION $(${transbin}/transmission-remote -V 2>&1|grep -oP "(?<=remote )[0-9.]+") with ${nordlynx_ip} mounted on ${vpn_itf}, container ip is ${container_ip}"
+log "STARTING TRANSMISSION $(${transbin}/transmission-remote -V 2>&1 | grep -oP "(?<=remote )[0-9.]+") with ${nordlynx_ip} mounted on ${vpn_itf}, container ip is ${container_ip}"
 su --preserve-environment ${RUN_AS} -s /bin/bash -c "${transbin}/transmission-daemon ${TRANSMISSION_LOG_LEVEL,,} -f -g ${TRANSMISSION_HOME} ${LOG}"
 
 #TODO execute post start.
