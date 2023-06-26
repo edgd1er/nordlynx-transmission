@@ -100,5 +100,6 @@ areProxiesPortOpened
 testProxies
 getInterfacesInfo
 getAliasesOutput
+docker compose logs >l
 if [[ "localhost" == "${PROXY_HOST}" ]] && [[ 1 -eq ${BUILD} ]]; then docker compose down; fi
 

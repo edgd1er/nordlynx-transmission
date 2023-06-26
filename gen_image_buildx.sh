@@ -6,7 +6,7 @@
 localDir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 DKRFILE=${localDir}/Dockerfile
 ARCHI=$(dpkg --print-architecture)
-IMAGE=nordvpn-proxy
+IMAGE=nordlynx-transmission
 DUSER=edgd1er
 [[ "${ARCHI}" != "armhf" ]] && isMultiArch=$(docker buildx ls | grep -c amd-arm)
 aptCacher=$(ip route get 1 | awk '{print $7}')
@@ -14,8 +14,9 @@ PROGRESS=plain #text auto plain
 PROGRESS=auto  #text auto plain
 CACHE=""
 WHERE="--load"
-#TBT_VERSION=4.0.3
-TBT_VERSION=dev
+#TBT_VERSION=3.00
+TBT_VERSION=4.0.3
+#TBT_VERSION=dev
 
 #exit on error
 set -e -u -o pipefail
@@ -36,32 +37,48 @@ WHERE="--push"
 #CACHE="--no-cache"
 
 NAME=${DUSER}/${IMAGE}
-TAG="${DUSER}/${IMAGE}:latest"
+case "${TBT_VERSION}" in
+  3.00)
+    TAG="${DUSER}/${IMAGE}:v3"
+    ;;
+  dev)
+    TAG="${DUSER}/${IMAGE}:dev"
+    ;;
+  4.0.3)
+    TAG="${DUSER}/${IMAGE}:v4"
+    ;;
+  4.1.0)
+    TAG="${DUSER}/${IMAGE}:dev"
+    ;;
+esac
 
-PTF=linux/arm/v7
-#build multi arch images
+#default build for rpi4
+PTF=linux/arm64
+#build amd64 if
 if [ "${ARCHI}" == "amd64" ]; then
   PTF=linux/amd64
-  # load is not compatible with multi arch build
-  if [[ $WHERE == "--push" ]]; then
-    PTF+=,linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
-    #enable multi arch build framework
-    if [ $isMultiArch -eq 0 ]; then
-      enableMultiArch
-    fi
-  fi
 fi
-
 # c= container, p=package
-todo=${1:-c}
-todo=${todo#-}
-for ((i = 0; i < ${#todo}; i++)); do
-  case ${todo:$i:1} in
+while getopts "ah?vpc" opt; do
+  case "$opt" in
   v)
     echo verbose mode
     set -x
     ;;
   a)
+    PTF=linux/arm/v7
+    #build multi arch images
+    if [ "${ARCHI}" == "amd64" ]; then
+      PTF=linux/amd64
+      # load is not compatible with multi arch build
+      if [[ $WHERE == "--push" ]]; then
+        PTF+=,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+        #enable multi arch build framework
+        if [ $isMultiArch -eq 0 ]; then
+          enableMultiArch
+        fi
+      fi
+    fi
     #no nodejs for v6
     if [[ ${TBT_VERSION} == "dev" ]]; then
       PTFARG=linux/amd64,linux/arm64/v8,linux/arm/v7
@@ -70,13 +87,10 @@ for ((i = 0; i < ${#todo}; i++)); do
     fi
     ;;
   p)
-    if [[ ${TBT_VERSION} == "dev" ]]; then
-      PTF=${PTFARG:-'linux/amd64'}
-    fi
     echo "generating debian package for ${PTF} in ${TBT_VERSION} version"
     docker buildx build --builder=amd-arm --platform ${PTF} -f ${DKRFILE}.deb --build-arg TBT_VERSION=$TBT_VERSION \
       $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher --provenance false -o out .
-    find out/ -mindepth 2 -type f -print -exec mv {} out/ \;
+    #find out/ -mindepth 1 -type f -print -exec mv {} out/ \;
     ;;
   c)
     #enable multi arch build framework
@@ -85,9 +99,10 @@ for ((i = 0; i < ${#todo}; i++)); do
     docker buildx build --builder=amd-arm ${WHERE} --platform ${PTF} -f ${DKRFILE} --build-arg TBT_VERSION=$TBT_VERSION \
       $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher --provenance false -t $TAG .
     #done
-    docker manifest inspect $TAG | grep -E "architecture|variant"
+    #docker manifest inspect $TAG | grep -E "architecture|variant"
+    docker manifest inspect $TAG | jq -r '.manifests[].platform|[.architecture,.os,.variant]| @tsv'
     ;;
-  h)
+  h | \?)
     echo -e "script:\t${0}\n-a\tbuild for all plateforms\n-c\tBuild image\n-p\tBuild packages"
     ;;
   *) ;;

@@ -22,7 +22,8 @@ RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
     && wget -qO- "https://github.com/6c65726f79/Transmissionic/releases/download/${TICV}/Transmissionic-webui-${TICV}.zip" | unzip -d /opt/transmission-ui/ - \
     && mv /opt/transmission-ui/web /opt/transmission-ui/transmissionic
 
-FROM debian:bullseye-slim AS debian-base
+#FROM debian:bullseye-slim AS debian-base
+FROM debian:bookworm-slim AS debian-base
 
 ARG aptcacher=''
 ARG VERSION=3.16.3

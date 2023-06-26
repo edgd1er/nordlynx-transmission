@@ -1,12 +1,15 @@
-FROM debian:bullseye-slim as base
+#FROM debian:bullseye-slim as base
+FROM debian:bookworm-slim as base
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #hadolint ignore=DL3008
 RUN  if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
     apt-get update && apt-get install -y --no-install-recommends software-properties-common \
-    && apt-add-repository non-free && apt-get update && apt-get install -y --no-install-recommends \
+    && apt-add-repository contrib non-free && apt-get update && apt-get install -y --no-install-recommends \
     dumb-init openvpn privoxy procps socat libevent-2.1-7  libnatpmp1 libminiupnpc17 \
-    tzdata dnsutils iputils-ping ufw openssh-client git jq curl wget unrar unzip bc libdeflate0 \
+    tzdata dnsutils iputils-ping ufw openssh-client git jq curl wget unzip bc libdeflate0 \
+    libclang-rt-14-dev unrar-free \
+    #libclang-common-15-dev unrar-free \
     && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
 
 FROM base as devbase
@@ -16,7 +19,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #hadolint ignore=DL3018,DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libcurl4-openssl-dev libssl-dev \
     pkg-config build-essential checkinstall wget tar zlib1g-dev intltool jq bash cmake g++ make python3 \
-    gettext libdeflate-dev libevent-dev libfmt-dev libminiupnpc-dev \
+    gettext libdeflate-dev libevent-dev libfmt-dev libminiupnpc-dev xz-utils \
     libnatpmp-dev libpsl-dev ninja-build xz-utils clang-format clang clang-tidy git \
     && curl -fsSL https://deb.nodesource.com/setup_current.x | bash - \
     && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
@@ -44,14 +47,20 @@ RUN if [[ "dev" == "${TBT_VERSION}" ]]; then \
         ; fi
 
 #build from tagged version
+WORKDIR /var/tmp/transmission
 #hadolint ignore=DL3003,DL3018,DL3008
+COPY transmission-${TBT_VERSION}.tar.xz /var/tmp/transmission/
 RUN if [[ ${TBT_VERSION} =~ ^4 ]]; then \
-    apt-get update && apt-get install -y --no-install-recommends libgtkmm-3.0-dev gettext qttools5-dev build-essential cmake libcurl4-openssl-dev libssl-dev gnupg; \
     URL=https://github.com/transmission/transmission/releases/download/${TBT_VERSION}/transmission-${TBT_VERSION}.tar.xz \
-    && echo "Fetching and building ${URL##*/} of transmission" \
+    && echo "Fetching and building ${URL##*/} with ${URL}" \
     && mkdir -p /var/tmp/transmission \
-    && curl -s ${URL} | tar -Jx -C /var/tmp/transmission --strip-components=1 \
-    && mkdir -p transmission/build && cd transmission/build \
+    && if [[ ! -f /var/tmp/transmission/transmission-${TBT_VERSION}.tar.xz ]]; then curl -o /var/tmp/transmission/transmission-${TBT_VERSION}.tar.xz -Lv ${URL}; fi; \
+    #rm -Rf /var/tmp/transmission/* \
+    ls -al /var/tmp/transmission \
+    && tar -Jxf /var/tmp/transmission/transmission-${TBT_VERSION}.tar.xz -C /var/tmp/transmission/ --strip-components=1 \
+    && ls -al /var/tmp/transmission \
+    && apt-get update && apt-get install -y --no-install-recommends libgtkmm-3.0-dev gettext qttools5-dev build-essential cmake libcurl4-openssl-dev libssl-dev gnupg \
+    && mkdir -p build && cd build \
     && ls -al .. \
     && pwd \
     && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. \
