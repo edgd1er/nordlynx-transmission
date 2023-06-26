@@ -10,6 +10,7 @@
 
 [Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.16.3_amd64.changelog): 3.16.3 (02/06/23)
 
+26/06/2023: moving to debian bookworm.
 
 /!\ please consider this project as a work in progress especially concerning iptables/leak management when not using nordvpn client (ie: NORDVPN_PRIVKEY found). 
 
@@ -42,7 +43,7 @@ you can then expose ports
 To sum up,  this container:
 * Opens the best connection to NordVPN using NordVpn API results according to your criteria.
 * Starts a SOCKS5 proxy that routes `eth0` to `nordlynx.wg0` with [dante-server](https://www.inet.no/dante/).
-* nordvpn dns servers perform resolution,  by default.
+* nordvpn dns servers perform resolution, by default.
 * uses supervisor to handle easily services.
 
 The main advantages are:
