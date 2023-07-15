@@ -11,9 +11,6 @@ jobs:
     with:
       build-context: '.'
       tbt_version: "3.00"
-      version: "3.16.3"
-      twcv: "v1.6.30"
-      ticv: "v1.8.0"
       tag: "edgd1er/nordlynx-transmission:v3"
     secrets: inherit
 
@@ -22,9 +19,6 @@ jobs:
     with:
       build-context: '.'
       tbt_version: "4.0.3"
-      version: "3.16.3"
-      twcv: "v1.6.30"
-      ticv: "v1.8.0"
       tag: "edgd1er/nordlynx-transmission:v4,edgd1er/nordlynx-transmission:latest"
     secrets: inherit
 
@@ -33,9 +27,6 @@ jobs:
     with:
       build-context: '.'
       tbt_version: "dev"
-      version: "3.16.3"
-      twcv: "v1.6.30"
-      ticv: "v1.8.0"
       tag: "edgd1er/nordlynx-transmission:dev"
       ptf: "linux/amd64,linux/arm64,linux/arm/v7"
     secrets: inherit

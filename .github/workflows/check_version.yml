@@ -8,15 +8,19 @@ env:
   LIBEVENT_VERSION: 2.1.12-stable
   TRANSMISSION_VERSION: 4.0.3
   TRANSMISSION_DEV_VERSION: 4.1.0
-  NORDVPN_VERSION: 3.16.3
   NORDVPN_PACKAGE: https://repo.nordvpn.com/deb/nordvpn/debian/dists/stable/main/binary-amd64/Packages
-  TWCV: v1.6.30
+  TWCV: v1.6.31
   TICV: v1.8.0
 
 jobs:
   check_nordvpn_version:
     runs-on: ubuntu-latest
     steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+      - name: get local nordvpn client version
+        run: |
+          echo "NORDVPN_VERSION="$(grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' ') >> $GITHUB_ENV
       - name: get latest version
         id: getlatestversion
         run: |

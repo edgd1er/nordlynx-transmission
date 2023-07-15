@@ -6,7 +6,7 @@ GITHUB_TOKEN=
 LIBEVENT_VERSION=$(grep -oP "(?<=LIBEVENT_VERSION: )[^$]+" .github/workflows/check_version.yml)
 TRANSMISSION_VERSION=$(grep -oP "(?<=TRANSMISSION_VERSION: )[^$]+" .github/workflows/check_version.yml)
 TRANSMISSION_DEV_VERSION=$(grep -oP "(?<=TRANSMISSION_DEV_VERSION: )[^$]+" .github/workflows/check_version.yml)
-NORDVPN_VERSION=$(grep -oP "(?<=NORDVPN_VERSION: )[^$]+" .github/workflows/check_version.yml)
+NORDVPN_VERSION=$(grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' ')
 TWCV=$(grep -oP "(?<=TWCV: )v[^$]+" .github/workflows/check_version.yml)
 TICV=$(grep -oP "(?<=TICV: )v[^$]+" .github/workflows/check_version.yml)
 
@@ -14,7 +14,7 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-[[ -v GITHUB_TOKEN ]] && HEADERTOKEN="-H \"Authorization: Bearer \${GITHUB_TOKEN}\"" && HEADERTOKEN=""
+[[ -n ${GITHUB_TOKEN} ]] && HEADERTOKEN=-H\ \'Authorization:\ Bearer\ ${GITHUB_TOKEN}\' || HEADERTOKEN=""
 
 #Functions
 checkNordvpn() {

@@ -12,7 +12,6 @@ on:
   #    - '.github/**'
 env:
   IMAGE: nordlynx-transmission
-  VERSION: "3.16.3"
   TAG: ${{ github.ref_name }}
   REVISION: ${{ github.ref_name }}
   USER: edgd1er
@@ -25,6 +24,9 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v3
+      - name: get local nordvpn client version
+        run: |
+            echo "VERSION="$(grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' ') >> $GITHUB_ENV
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx

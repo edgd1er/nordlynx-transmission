@@ -7,7 +7,8 @@ on:
         required: true
         type: string
       version:
-        required: true
+        required: false
+        default: "3.16.3"
         type: string
       tbt_version:
         required: true
@@ -16,15 +17,20 @@ on:
         required: true
         type: string
       twcv:
-        required: true
+        required: false
+        default: "v1.6.31"
         type: string
       ticv:
-        required: true
+        required: false
+        default: "v1.8.0"
         type: string
       ptf:
         required: false
         type: string
         default: "linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6"
+
+env:
+  PUSHFLAG: ${{ github.ref == 'refs/heads/main' }}
 
 jobs:
   build:
@@ -62,7 +68,7 @@ jobs:
             TZ=America/Chicago
           platforms: ${{ inputs.ptf }}
           provenance: false
-          push: true
+          push: ${{ env.PUSHFLAG }}
           #labels: ${{ }}
           tags: ${{ inputs.tag }}
           cache-from: type=gha
