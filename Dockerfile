@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.3
-FROM --platform=$BUILDPLATFORM alpine:3.17 AS TransmissionUIs
+FROM --platform=$BUILDPLATFORM alpine:3.18 AS TransmissionUIs
 ARG TWCV="v1.6.31"
 ARG TICV="v1.8.0"
 #hadolint ignore=DL3018,DL3008,DL4006,DL4001
@@ -26,7 +26,7 @@ RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
 FROM debian:bookworm-slim AS debian-base
 
 ARG aptcacher=''
-ARG VERSION=3.16.3
+ARG VERSION=3.16.4
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 

@@ -6,6 +6,15 @@ on:
   workflow_dispatch:
 
 jobs:
+  getNordvpnVersions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+      - name: get local nordvpn client version
+        run: |
+          grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' '
+          echo "VERSION="$(grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' ') >> $GITHUB_ENV
   build-v3-images:
     uses: ./.github/workflows/build-template.yml
     with:
@@ -13,6 +22,7 @@ jobs:
       tbt_version: "3.00"
       tag: "edgd1er/nordlynx-transmission:v3"
     secrets: inherit
+    needs: getNordvpnVersions
 
   build-v4-images:
     uses: ./.github/workflows/build-template.yml
@@ -21,6 +31,7 @@ jobs:
       tbt_version: "4.0.3"
       tag: "edgd1er/nordlynx-transmission:v4,edgd1er/nordlynx-transmission:latest"
     secrets: inherit
+    needs: getNordvpnVersions
 
   build-v4dev-images:
     uses: ./.github/workflows/build-template.yml
@@ -30,3 +41,4 @@ jobs:
       tag: "edgd1er/nordlynx-transmission:dev"
       ptf: "linux/amd64,linux/arm64,linux/arm/v7"
     secrets: inherit
+    needs: getNordvpnVersions
