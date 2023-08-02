@@ -8,7 +8,7 @@
 
 # nordlynx-transmission
 
-[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.16.3_amd64.changelog): 3.16.3 (02/06/23)
+[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.16.4_amd64.changelog): 3.16.4 (02/08/23)
 
 26/06/2023: moving to debian bookworm.
 
