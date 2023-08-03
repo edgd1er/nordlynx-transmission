@@ -2,6 +2,7 @@
 
 # Use bash for inline if-statements in arch_patch target
 SHELL:=bash
+NEWVERSION := $(shell grep -oE 'changelog.: .+' README.md | cut -f2 -d' ')
 
 # Enable BuildKit for Docker build
 export DOCKER_BUILDKIT:=1
@@ -41,6 +42,12 @@ buildnoclient: ## build image without nordvpn client
 ver:	## check versions
 	#    && wget --no-cache -qO- "$(wget --no-cache -qO- https://api.github.com/repos/ronggang/transmission-web-control/releases/latest | jq --raw-output '.tarball_url')" | tar -C /opt/transmission-ui/transmission-web-control/ --strip-components=2 -xz \
 	./versions.sh
+	@echo "local  version: "$$(grep -oP "(?<=changelog\): )[^ ]+" README.md)
+	@echo "remote version: "$$(curl -Ls "${NORDVPN_PACKAGE}" | grep -oP "(?<=Version: )(.*)" | sort -t. -n -k1,1 -k2,2 -k3,3 | tail -1)
+	@echo "NEWVERSION: $(NEWVERSION)"
+	@sed -i -E "s/ VERSION:.+/ VERSION: ${NEWVERSION}/" docker-compose.yml
+	@sed -i -E "s/ VERSION=.+/ VERSION=${NEWVERSION}/" Dockerfile
+	@grep -E ' VERSION[:=].+' Dockerfile docker-compose.yml
 
 run:
 	@echo "run container"
