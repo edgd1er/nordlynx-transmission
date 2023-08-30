@@ -6,7 +6,7 @@ on:
 
 env:
   LIBEVENT_VERSION: 2.1.12-stable
-  TRANSMISSION_VERSION: 4.0.3
+  TRANSMISSION_VERSION: 4.0.4
   TRANSMISSION_DEV_VERSION: 4.1.0
   NORDVPN_PACKAGE: https://repo.nordvpn.com/deb/nordvpn/debian/dists/stable/main/binary-amd64/Packages
   TWCV: v1.6.31
