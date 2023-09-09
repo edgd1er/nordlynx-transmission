@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: get local nordvpn client version
         run: |
           grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' '
@@ -28,7 +28,7 @@ jobs:
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
-      tbt_version: "4.0.3"
+      tbt_version: "4.0.4"
       tag: "edgd1er/nordlynx-transmission:v4,edgd1er/nordlynx-transmission:latest"
     secrets: inherit
     needs: getNordvpnVersions

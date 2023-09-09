@@ -15,8 +15,8 @@ PROGRESS=auto  #text auto plain
 CACHE=""
 WHERE="--load"
 #TBT_VERSION=3.00
-TBT_VERSION=4.0.3
-#TBT_VERSION=dev
+#TBT_VERSION=4.0.4
+TBT_VERSION=dev # 4.1.x
 
 #exit on error
 set -e -u -o pipefail
@@ -44,7 +44,7 @@ case "${TBT_VERSION}" in
   dev)
     TAG="${DUSER}/${IMAGE}:dev"
     ;;
-  4.0.3)
+  4.0.4)
     TAG="${DUSER}/${IMAGE}:v4"
     ;;
   4.1.0)
@@ -88,9 +88,15 @@ while getopts "ah?vpc" opt; do
     ;;
   p)
     echo "generating debian package for ${PTF} in ${TBT_VERSION} version"
+    #get transmission source if not present
+    if [[ ! -f transmission-${TBT_VERSION}.tar.xz ]] && [[ "dev" != ${TBT_VERSION} ]]; then
+      wget -O transmission-${TBT_VERSION}.tar.xz https://github.com/transmission/transmission/releases/download/${TBT_VERSION}/transmission-${TBT_VERSION}.tar.xz
+    fi
+    date
     docker buildx build --builder=amd-arm --platform ${PTF} -f ${DKRFILE}.deb --build-arg TBT_VERSION=$TBT_VERSION \
       $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher --provenance false -o out .
-    #find out/ -mindepth 1 -type f -print -exec mv {} out/ \;
+    find out/ -mindepth 1 -type f -print -exec mv {} out/ \;
+    date
     ;;
   c)
     #enable multi arch build framework

@@ -14,6 +14,8 @@
 
 /!\ please consider this project as a work in progress especially concerning iptables/leak management when not using nordvpn client (ie: NORDVPN_PRIVKEY found). 
 
+/!\ since v4 for transmission, building package takes too long for github, `gen_image_buildx.sh -ap` generates debian packages for different architecture arm64, amd64, arm v7, then deb files are uploaded to not rebuild transmission at each image build.
+
 purpose: compare wireguard and nordlynx speed transmisssion.
 
 This is a docker container that connects to the recommended NordVPN servers through nordvpn client or wireguard,  and starts a SOCKS5 proxy (dante),  an http proxy (tinyproxy) and torrent client (transmission).
