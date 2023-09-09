@@ -8,7 +8,7 @@ RUN  if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcac
     && apt-add-repository contrib non-free && apt-get update && apt-get install -y --no-install-recommends \
     dumb-init openvpn privoxy procps socat libevent-2.1-7  libnatpmp1 libminiupnpc17 \
     tzdata dnsutils iputils-ping ufw openssh-client git jq curl wget unzip bc libdeflate0 \
-    libclang-rt-14-dev unrar-free \
+    unrar-free \
     #libclang-common-15-dev unrar-free \
     && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
 
@@ -20,7 +20,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libcurl4-openssl-dev libssl-dev \
     pkg-config build-essential checkinstall wget tar zlib1g-dev intltool jq bash cmake g++ make python3 \
     gettext libdeflate-dev libevent-dev libfmt-dev libminiupnpc-dev xz-utils \
-    libnatpmp-dev libpsl-dev ninja-build xz-utils clang-format clang clang-tidy git \
+    libnatpmp-dev libpsl-dev ninja-build xz-utils clang-format clang clang-tidy git libclang-rt-14-dev \
     && curl -fsSL https://deb.nodesource.com/setup_current.x | bash - \
     && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
 
@@ -49,7 +49,7 @@ RUN if [[ "dev" == "${TBT_VERSION}" ]]; then \
 #build from tagged version
 WORKDIR /var/tmp/transmission
 #hadolint ignore=DL3003,DL3018,DL3008
-COPY transmission-${TBT_VERSION}.tar.xz /var/tmp/transmission/
+#COPY transmission-${TBT_VERSION}.tar.xz /var/tmp/transmission/
 RUN if [[ ${TBT_VERSION} =~ ^4 ]]; then \
     URL=https://github.com/transmission/transmission/releases/download/${TBT_VERSION}/transmission-${TBT_VERSION}.tar.xz \
     && echo "Fetching and building ${URL##*/} with ${URL}" \
