@@ -76,7 +76,7 @@ sysclts:
  ```
   might be needed,  if nordvpn cannot change the settings itself.
 
-* ANALYTICS: [off/on], default on, send anonymous aggregate data: crash reports, OS version, marketing performance, and feature usage data
+* ANALYTICS: [off,0,false/on,1,true], default on, send anonymous aggregate data: crash reports, OS version, marketing performance, and feature usage data
 * TECHNOLOGY: [NordLynx]/[OpenVPN], default: NordLynx (wireguard like)
 * PROTOCOL=tcp # or udp (default), useful only when using openvpn. wireguard is udp only.
 * [OBFUSCATE](https://nordvpn.com/features/obfuscated-servers/): [off/on], default off, on hide vpn's use.

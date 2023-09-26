@@ -24,9 +24,28 @@ export GW
 export INT
 export nordvpn_api="https://api.nordvpn.com"
 
+checkDns() {
+  # Test DNS resolution
+  if ! nslookup ${HEALTH_CHECK_HOST:-"google.com"} 1>/dev/null 2>&1; then
+    echo "WARNING: DNS resolution test failed"
+  else
+    echo "INFO: DNS resolution test ok"
+  fi
+}
+
 getCurrentWanIp() {
   myIp=$(curl -s -m 5 'ifconfig.me/ip')
-  [[ -n ${myIp} ]] && echo $myIp || curl -s -m 5 'https://api.ipify.org?format=json' | jq .ip
+  if [[ -n ${myIp} ]]; then
+    echo $myIp
+  else
+    i=$(curl -m 5 'https://api.ipify.org?format=json' 2>&1)
+    if [[ $? ]]; then
+      echo ${i} | jq -r .ip
+    else
+      checkDNS
+      echo "ERROR: getCurrentWanIp: cannot get my ip"
+    fi
+  fi
 }
 
 getVpnProtectionStatus() {

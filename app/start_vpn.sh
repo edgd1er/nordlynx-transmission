@@ -7,6 +7,7 @@ set -euo pipefail
 [[ ${NORDVPN_DEBUG:-false} == "true" ]] && set -x || true
 TSEC=5
 RDIR=/run/nordvpn/
+ANALYTICS=${ANALYTICS:-1}
 COUNTRY=${COUNTRY:-''}
 CONNECT=${CONNECT:-''}
 GROUP=${GROUP:-''}
