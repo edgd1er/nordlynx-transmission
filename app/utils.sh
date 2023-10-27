@@ -26,7 +26,7 @@ export nordvpn_api="https://api.nordvpn.com"
 
 checkDns() {
   # Test DNS resolution
-  if ! nslookup ${HEALTH_CHECK_HOST:-"google.com"} 1>/dev/null 2>&1; then
+  if ! dig +short ${HEALTH_CHECK_HOST:-"google.com"} 1>/dev/null 2>&1; then
     echo "WARNING: DNS resolution test failed"
   else
     echo "INFO: DNS resolution test ok"
