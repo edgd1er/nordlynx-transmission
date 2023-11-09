@@ -536,8 +536,27 @@ changeTinyListenAddress() {
 }
 
 getLatestTransmissionWebUI() {
-  newVer=$(curl -s "https://api.github.com/repos/transmission-web-control/transmission-web-control/releases/latest" | jq -r .tag_name )
+  newVer=$(curl -s "https://api.github.com/repos/transmission-web-control/transmission-web-control/releases/latest" | jq -r .tag_name)
   wget --no-cache -qO- "https://github.com/transmission-web-control/transmission-web-control/releases/download/${newVer}/dist.tar.gz" | tar -C /opt/transmission-ui/transmission-web-control/ --strip-components=2 -xz
+}
+
+stop_transmission() {
+  #cannot use https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md#233-authentication
+  #as rpc-password is required to set daemon's password.
+  #username and #password are set
+  if [[ -n ${TRANSMISSION_RPC_USERNAME} ]] && [[ -n ${TRANSMISSION_RPC_PASSWORD} ]]; then
+    CREDS="-n \"${TRANSMISSION_RPC_USERNAME}:${TRANSMISSION_RPC_PASSWORD}\""
+  else
+    #No creds set
+    CREDS=""
+  fi
+
+  container_ip=$(getEthIp)
+  while [ 1 -le $(pgrep -c "transmission-daemon") ]; do
+    transmission-remote http://${container_ip}:${TRANSMISSION_RPC_PORT} ${CREDS} --exit
+    sleep 1
+  done
+  unset CREDS
 }
 
 ## tests functions
