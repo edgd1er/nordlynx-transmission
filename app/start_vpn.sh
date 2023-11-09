@@ -92,6 +92,13 @@ echo "nameserver 1.1.1.1" >/etc/resolv.conf
 TECHNOLOGY=${TECHNOLOGY:-'nordlynx'}
 OBFUSCATE=${OBFUSCATE:-'off'}
 
+#if running stop it.
+stop_transmission
+
+#stop killswitch that disable communication when no vpn is up
+if [ 1 -le $(pgrep -c nordvpnd) ]; then
+  nordvpn s killswitch off
+fi
 # checkLatest commented as no more updated
 checkLatestApt
 

@@ -28,21 +28,8 @@ if [[ -f ${RPC_CREDS} ]]; then
     log "Error, TRANSMISSION_RPC_USERNAME and TRANSMISSION_RPC_PASSWORD have to be defined."
   fi
 fi
-#cannot use https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md#233-authentication
-#as rpc-password is required to set daemon's password.
-#username and #password are set
-if [[ -n ${TRANSMISSION_RPC_USERNAME} ]] && [[ -n ${TRANSMISSION_RPC_PASSWORD} ]]; then
-  CREDS="-n \"${TRANSMISSION_RPC_USERNAME}:${TRANSMISSION_RPC_PASSWORD}\""
-else
-  #No creds set
-  CREDS=""
-fi
 
-while [ $(ps -ef | grep -c transmission-daemon) -gt 1 ]; do
-  transmission-remote http://${container_ip}:${TRANSMISSION_RPC_PORT} ${CREDS} --exit
-  sleep 1
-done
-unset CREDS
+stop_transmission
 
 # If transmission-pre-start.sh exists, run it
 SCRIPT=/etc/scripts/transmission-pre-start.sh
