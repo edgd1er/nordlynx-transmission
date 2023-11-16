@@ -9,7 +9,7 @@ env:
   TRANSMISSION_VERSION: 4.0.4
   TRANSMISSION_DEV_VERSION: 4.1.0
   NORDVPN_PACKAGE: https://repo.nordvpn.com/deb/nordvpn/debian/dists/stable/main/binary-amd64/Packages
-  TWCV: v1.6.31
+  TWCV: v1.6.33
   TICV: v1.8.0
 
 jobs:
