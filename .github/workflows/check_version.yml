@@ -66,9 +66,9 @@ jobs:
       - name: get ui's latest version
         id: getuilatestversion
         run: |
-          ver=$(curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" "https://api.github.com/repos/transmission-web-control/transmission-web-control/releases/latest" | jq -r .tag_name)
+          ver=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/transmission-web-control/transmission-web-control/releases/latest" | jq -r .tag_name)
           echo -e "transmission-web-control version: ${{ env.TWCV }}, latest github transmission version: ${ver}"
           if [[ ${{ env.TWCV }} != ${ver} ]]; then echo ERROR; fi
-          ver=$(curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" "https://api.github.com/repos/6c65726f79/Transmissionic/releases/latest" | jq -r .tag_name)
+          ver=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/6c65726f79/Transmissionic/releases/latest" | jq -r .tag_name)
           echo -e "Transmissionic version: ${{ env.TICV }}, latest github transmission version: ${ver}"
           if [[ ${{ env.TICV }} != ${ver} ]]; then echo ERROR; fi
