@@ -26,7 +26,7 @@ RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
 FROM debian:bookworm-slim AS debian-base
 
 ARG aptcacher=''
-ARG VERSION=3.16.8
+ARG VERSION=3.16.9
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 
