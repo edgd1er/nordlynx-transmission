@@ -44,8 +44,8 @@ ver:	## check versions
 	rversion=$$(curl -Ls "${NORDVPN_PACKAGE}" | grep -oP "(?<=Version: )(.*)" | sort -t. -n -k1,1 -k2,2 -k3,3 | tail -1); \
 	echo "local  version: $${lversion}" ;\
 	echo "remote version: $${rversion}" ;\
-	if [[ ${lversion} != ${rversion} ]]; then sed -i -E "s/ VERSION:.+/ VERSION: ${NVPNVER}/" docker-compose.yml ; \
-	sed -i -E "s/ VERSION=.+/ VERSION=${NVPNVER}/" Dockerfile ; fi ; \
+	if [[ $${lversion} != $${rversion} ]]; then sed -i -E "s/ VERSION:.*/ VERSION: $${rversion}/" docker-compose.yml ; \
+	sed -i -E "s/ VERSION=.*/ VERSION=$${rversion}/" Dockerfile ; fi ; \
 	grep -E ' VERSION[:=].+' Dockerfile docker-compose.yml ;
 
 run:
