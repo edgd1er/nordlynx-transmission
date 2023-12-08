@@ -15,8 +15,8 @@ PROGRESS=auto  #text auto plain
 CACHE=""
 WHERE="--load"
 #TBT_VERSION=3.00
-#TBT_VERSION=4.0.4
-TBT_VERSION=dev # 4.1.x
+TBT_VERSION=4.0.5
+#TBT_VERSION=dev # 4.1.x
 
 #exit on error
 set -e -u -o pipefail
@@ -44,7 +44,7 @@ case "${TBT_VERSION}" in
   dev)
     TAG="${DUSER}/${IMAGE}:dev"
     ;;
-  4.0.4)
+  4.0.5)
     TAG="${DUSER}/${IMAGE}:v4"
     ;;
   4.1.0)
@@ -83,7 +83,8 @@ while getopts "ah?vpc" opt; do
     if [[ ${TBT_VERSION} == "dev" ]]; then
       PTFARG=linux/amd64,linux/arm64/v8,linux/arm/v7
     else
-      PTFARG=linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+      #PTFARG=linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+      PTFARG=linux/amd64,linux/arm64/v8,linux/arm/v7
     fi
     ;;
   p)
@@ -95,7 +96,7 @@ while getopts "ah?vpc" opt; do
     date
     docker buildx build --builder=amd-arm --platform ${PTF} -f ${DKRFILE}.deb --build-arg TBT_VERSION=$TBT_VERSION \
       $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher --provenance false -o out .
-    find out/ -mindepth 1 -type f -print -exec mv {} out/ \;
+    find out/ -mindepth 2 -type f -print -exec mv {} out/ \;
     date
     ;;
   c)

@@ -24,21 +24,22 @@ checkNordvpn() {
 }
 
 checkLibEvent() {
-  ver=$(curl -s ${HEADERTOKEN} "https://api.github.com/repos/libevent/libevent/releases/latest" | jq -r .tag_name )
+  ver=$(curl -s ${HEADERTOKEN} "https://api.github.com/repos/libevent/libevent/releases/latest" | jq -r .tag_name)
   [[ release-${LIBEVENT_VERSION} == ${ver} ]] && coul=${GREEN} || coul=${RED}
   echo -e ${coul} "libevent build version: ${LIBEVENT_VERSION}, latest github libevent version: ${ver}"
 }
 
-checkTbt(){
-  ver=$(curl -s ${HEADERTOKEN} "https://api.github.com/repos/transmission/transmission/releases/latest" | jq -r .tag_name )
+checkTbt() {
+  ver=$(curl -s ${HEADERTOKEN} "https://api.github.com/repos/transmission/transmission/releases/latest" | jq -r .tag_name)
   [[ ${TRANSMISSION_VERSION} == ${ver} ]] && coul=${GREEN} || coul=${RED}
+  [[ ! -f ./transmission-${ver}.tar.xz ]] && curl -o transmission-${ver}.tar.xz -L https://github.com/transmission/transmission/releases/download/${ver}/transmission-${ver}.tar.xz
   echo -e ${coul} "transmission build version: ${TRANSMISSION_VERSION}, latest github transmission version: ${ver}"
   devver=$(curl -s "https://raw.githubusercontent.com/transmission/transmission/main/CMakeLists.txt" | grep -oP "(?<=TR_VERSION_(MAJOR|MINOR|PATCH) \")[^\"]+" | tr '\n' '.' | grep -oP "[0-9]+\.[0-9]+\.[0-9]+")
   [[ ${TRANSMISSION_DEV_VERSION} == ${devver} ]] && coul=${GREEN} || coul=${RED}
   echo -e ${coul} "transmission dev build version: ${TRANSMISSION_DEV_VERSION}, latest github transmission dev version: ${devver}"
 }
 
-checkUIs(){
+checkUIs() {
   ver=$(curl -s ${HEADERTOKEN} "https://api.github.com/repos/transmission-web-control/transmission-web-control/releases/latest" | jq -r .tag_name)
   [[ ${TWCV} == ${ver} ]] && coul=${GREEN} || coul=${RED}
   echo -e ${coul} "transmission-web-control version: ${TWCV}, latest github transmission version: ${ver}"
