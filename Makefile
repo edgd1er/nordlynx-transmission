@@ -9,6 +9,8 @@ export DOCKER_BUILDKIT:=1
 export NORDVPN_PACKAGE:=https://repo.nordvpn.com/deb/nordvpn/debian/dists/stable/main/binary-amd64/Packages
 APTCACHER:="192.168.53.208"
 #APTCACHER:="192.168.43.61"
+TBT_V4=4.0.5
+TBT_V3=3.00
 
 # https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help: ## generate help list
@@ -21,7 +23,7 @@ lint: ## lint both dockerfile
 build: ## build image
 	@echo "build image with nordvpn client..."
 	#docker-compose build
-	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="4.0.4" -f ./Dockerfile -t edgd1er/nordlynx-transmission:latest .
+	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="${TBT_V4}" -f ./Dockerfile -t edgd1er/nordlynx-transmission:latest .
 
 builddev: ##build dev image
 	@echo "Build dev image"
@@ -29,11 +31,11 @@ builddev: ##build dev image
 
 build3: ##build dev image
 	@echo "Build transmission v3"
-	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="3.00" -f ./Dockerfile -t edgd1er/nordlynx-transmission:v3 .
+	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="${TBT_V3}" -f ./Dockerfile -t edgd1er/nordlynx-transmission:v3 .
 
 build4: ##build dev image
 	@echo "Build transmission v4 beta image"
-	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="4.0.4" -f ./Dockerfile -t edgd1er/nordlynx-transmission:v4 .
+	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="${TBT_V4}" -f ./Dockerfile -t edgd1er/nordlynx-transmission:v4 .
 
 buildnoclient: ## build image without nordvpn client
 	@echo "build image without nordvpn client"

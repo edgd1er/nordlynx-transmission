@@ -28,7 +28,7 @@ jobs:
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
-      tbt_version: "4.0.4"
+      tbt_version: "4.0.5"
       tag: "edgd1er/nordlynx-transmission:v4,edgd1er/nordlynx-transmission:latest"
     secrets: inherit
     needs: getNordvpnVersions
