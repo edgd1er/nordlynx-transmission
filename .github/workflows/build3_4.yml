@@ -5,6 +5,13 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  tbt_version3: "3.00"
+  tbt_version4: "4.0.5"
+  nversion: "3.16.9"
+  twcv: "1.6.33"
+  ticv: "1.8.0"
+
 jobs:
   getNordvpnVersions:
     runs-on: ubuntu-latest
@@ -15,23 +22,45 @@ jobs:
         run: |
           grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' '
           echo "VERSION="$(grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' ') >> $GITHUB_ENV
+  show_vars:
+    runs-on: ubuntu-latest
+    outputs:
+      tbt_version3: ${{ env.tbt_version3 }}
+      tbt_version4: ${{ env.tbt_version4 }}
+      nversion: ${{ env.nversion }}
+      twcv: ${{ env.twcv }}
+      ticv: ${{ env.ticv }}
+    steps:
+      - name: "show vars"
+        run: echo "TBT_VERSION3=${tbt_version3},TBT_VERSION4=${tbt_version4}, VERSION=${nversion}, TWCV=${twcv}, TICV=${ticv}"
   build-v3-images:
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
-      tbt_version: "3.00"
+      tbt_version: ${{ needs.show_vars.outputs.tbt_version3 }}
       tag: "edgd1er/nordlynx-transmission:v3"
+      version: ${{ needs.show_vars.outputs.nversion }}
+      twcv: ${{ needs.show_vars.outputs.twcv }}
+      ticv: ${{ needs.show_vars.outputs.ticv }}
+
     secrets: inherit
-    needs: getNordvpnVersions
+    needs:
+      - getNordvpnVersions
+      - show_vars
 
   build-v4-images:
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
-      tbt_version: "4.0.5"
+      tbt_version: ${{ needs.show_vars.outputs.tbt_version4}}
       tag: "edgd1er/nordlynx-transmission:v4,edgd1er/nordlynx-transmission:latest"
+      version: ${{ needs.show_vars.outputs.nversion }}
+      twcv: ${{ needs.show_vars.outputs.twcv }}
+      ticv: ${{ needs.show_vars.outputs.ticv }}
     secrets: inherit
-    needs: getNordvpnVersions
+    needs:
+      - getNordvpnVersions
+      - show_vars
 
   build-v4dev-images:
     uses: ./.github/workflows/build-template.yml
@@ -40,5 +69,10 @@ jobs:
       tbt_version: "dev"
       tag: "edgd1er/nordlynx-transmission:dev"
       ptf: "linux/amd64,linux/arm64,linux/arm/v7"
+      version: ${{ needs.show_vars.outputs.nversion }}
+      twcv: ${{ needs.show_vars.outputs.twcv }}
+      ticv: ${{ needs.show_vars.outputs.ticv }}
     secrets: inherit
-    needs: getNordvpnVersions
+    needs:
+      - getNordvpnVersions
+      - show_vars

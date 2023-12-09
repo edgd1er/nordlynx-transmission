@@ -8,7 +8,7 @@ on:
         type: string
       version:
         required: false
-        default: "3.16.8"
+        default: "3.16.9"
         type: string
       tbt_version:
         required: true
@@ -18,11 +18,11 @@ on:
         type: string
       twcv:
         required: false
-        default: "v1.6.31"
+        default: "1.6.33"
         type: string
       ticv:
         required: false
-        default: "v1.8.0"
+        default: "1.8.0"
         type: string
       ptf:
         required: false
@@ -56,6 +56,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
+      - name: "show vars"
+        run: echo "TBT_VERSION=${{ inputs.tbt_version }}, VERSION=${{ inputs.version }}, TWCV=${{ inputs.twcv }}, TICV=${{ inputs.ticv }}"
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
@@ -65,6 +67,8 @@ jobs:
           build-args: |
             TBT_VERSION=${{ inputs.tbt_version }}
             VERSION=${{ inputs.version }}
+            TWCV=${{ inputs.twcv }}
+            TICV=${{ inputs.ticv }}
             TZ=America/Chicago
           platforms: ${{ inputs.ptf }}
           provenance: false

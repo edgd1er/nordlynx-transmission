@@ -1,25 +1,27 @@
 # syntax=docker/dockerfile:1.3
 FROM --platform=$BUILDPLATFORM alpine:3.18 AS TransmissionUIs
-ARG TWCV="v1.6.31"
-ARG TICV="v1.8.0"
+ARG TWCV="1.6.33"
+ARG TICV="1.8.0"
 #hadolint ignore=DL3018,DL3008,DL4006,DL4001
 RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
-    && echo "Install Shift" \
+    && export \
+    && env \
+    && echo "Install Shift (master)" \
     && wget --no-cache -qO- https://github.com/killemov/Shift/archive/master.tar.gz | tar xz -C /opt/transmission-ui \
     && mv /opt/transmission-ui/Shift-master /opt/transmission-ui/shift \
-    && echo "Install Flood for Transmission" \
+    && echo "Install Flood for Transmission (latest)" \
     && wget --no-cache -qO- https://github.com/johman10/flood-for-transmission/releases/download/latest/flood-for-transmission.tar.gz | tar xz -C /opt/transmission-ui \
-    && echo "Install Combustion" \
+    && echo "Install Combustion (archived release)" \
     && wget --no-cache -qO- https://github.com/Secretmapper/combustion/archive/release.tar.gz | tar xz -C /opt/transmission-ui \
-    && echo "Install kettu" \
+    && echo "Install kettu (archive master)" \
     && wget --no-cache -qO- https://github.com/endor/kettu/archive/master.tar.gz | tar xz -C /opt/transmission-ui \
     && mv /opt/transmission-ui/kettu-master /opt/transmission-ui/kettu \
-    && echo "Install Transmission-Web-Control" \
+    && echo "Install Transmission-Web-Control v${TWCV}" \
     && mkdir /opt/transmission-ui/transmission-web-control \
-    && wget --no-cache -qO- "https://github.com/transmission-web-control/transmission-web-control/releases/download/${TWCV}/dist.tar.gz" | tar -C /opt/transmission-ui/transmission-web-control/ --strip-components=2 -xz \
+    && wget --no-cache -qO- "https://github.com/transmission-web-control/transmission-web-control/releases/download/v${TWCV}/dist.tar.gz" | tar -C /opt/transmission-ui/transmission-web-control/ --strip-components=2 -xz \
     #&& ver=$(curl -s "https://api.github.com/repos/6c65726f79/Transmissionic/releases/latest" | jq -r .tag_name) \
-    && echo "Install Transmissionic ${TICV}" \
-    && wget -qO- "https://github.com/6c65726f79/Transmissionic/releases/download/${TICV}/Transmissionic-webui-${TICV}.zip" | unzip -d /opt/transmission-ui/ - \
+    && echo "Install Transmissionic v${TICV}" \
+    && wget -qO- "https://github.com/6c65726f79/Transmissionic/releases/download/v${TICV}/Transmissionic-webui-v${TICV}.zip" | unzip -d /opt/transmission-ui/ - \
     && mv /opt/transmission-ui/web /opt/transmission-ui/transmissionic
 
 #FROM debian:bullseye-slim AS debian-base
@@ -91,7 +93,7 @@ FROM debian-base AS new
 
 ARG aptcacher=''
 ARG DEBIAN_FRONTEND=noninteractive
-ARG TBT_VERSION=3.00
+ARG TBT_VERSION=4.0.5
 ARG TARGETPLATFORM
 
 ENV TZ=${TZ:-Etc/UTC}
