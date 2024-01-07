@@ -52,15 +52,15 @@ setup_nordvpn() {
   if [[ ${OBFUSCATE,,} == "on" ]] && [[ ${TECHNOLOGY,,} = 'openvpn' ]]; then
     nordvpn set obfuscate ${OBFUSCATE:-'off'}
   fi
-  [[ -n ${DNS:-''} ]] && nordvpn set dns ${DNS//[;,]/ }
+  [[ -n ${DNS:-''} ]] && nordvpn set dns ${DNS//[;,]/ } || true
   if [[ -z ${DOCKER_NET:-''} ]]; then
     DOCKER_NET="$(getEthCidr)"
   fi
   log "INFO: NORDVPN: whitelisting docker's net: ${DOCKER_NET}"
-  nordvpn whitelist add subnet ${DOCKER_NET}
+  nordvpn whitelist add subnet ${DOCKER_NET} || true
   if [[ -n ${LOCAL_NETWORK:-''} ]]; then
     for net in ${LOCAL_NETWORK//[;,]/ }; do
-      nordvpn whitelist add subnet ${net}
+      nordvpn whitelist add subnet ${net} || true
       #do not readd route if already present
       if [[ -z $(ip route show match ${net} | grep ${net}) ]]; then
         log "INFO: NORDVPN: adding route to local network ${net} via ${GW} dev ${INT}"
@@ -70,7 +70,7 @@ setup_nordvpn() {
   else
     log "INFO: NORDVPN: no route to host's local network"
   fi
-  [[ -n ${PORTS:-''} ]] && for port in ${PORTS//[;,]/ }; do nordvpn whitelist add port ${port}; done
+  [[ -n ${PORTS:-''} ]] && for port in ${PORTS//[;,]/ }; do nordvpn whitelist add port ${port} || true; done
   [[ ${DEBUG} ]] && nordvpn -version && nordvpn settings
 }
 

@@ -429,9 +429,9 @@ connectWireguardVpn() {
 
 enforce_proxies_nordvpn() {
   log "proxies: allow ports 1080, ${WEBPROXY_PORT}"
-  nordvpn whitelist add port 1080 protocol TCP
-  nordvpn whitelist add port 1080 protocol UDP
-  nordvpn whitelist add port ${WEBPROXY_PORT} protocol TCP
+  nordvpn whitelist add port 1080 protocol TCP || true
+  nordvpn whitelist add port 1080 protocol UDP || true
+  nordvpn whitelist add port ${WEBPROXY_PORT} protocol TCP || true
   iptables -L
 }
 
