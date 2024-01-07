@@ -60,6 +60,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && echo "alias gettiny='grep -vP \"(^$|^#)\" /etc/tinyproxy/tinyproxy.conf'" | tee -a ~/.bashrc \
     && echo "alias getdante='grep -vP \"(^$|^#)\" /etc/dante.conf'" | tee -a ~/.bashrc \
     && echo "alias dltest='curl http://appliwave.testdebit.info/100M.iso -o /dev/null'" | tee -a ~/.bashrc \
+    && echo "alias translist='transmission-remote -n ${TRANSMISSION_RPC_USERNAME}:${TRANSMISSION_RPC_PASSWORD}  -l'" | tee -a ~/.bashrc \
     #&& echo "alias testalias='while read -r line; do echo \$line;eval \$line;done <<<\$(grep ^alias ~/.bashrc | cut -f 2 -d"'"'"'" | tee -a ~/.bashrc \
     # allow to install resolvconf
     && echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
