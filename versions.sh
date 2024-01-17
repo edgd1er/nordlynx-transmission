@@ -4,8 +4,8 @@ set -e -o pipefail
 #vars
 GITHUB_TOKEN=
 LIBEVENT_VERSION=$(grep -oP "(?<=LIBEVENT_VERSION: )[^$]+" .github/workflows/check_version.yml)
-TRANSMISSION_VERSION=$(grep -oP "(?<=TRANSMISSION_VERSION: )[^$]+" .github/workflows/check_version.yml)
-TRANSMISSION_DEV_VERSION=$(grep -oP "(?<=TRANSMISSION_DEV_VERSION: )[^$]+" .github/workflows/check_version.yml)
+TRANSMISSION_VERSION=$(grep -oP "(?<=TBT_VERSION: )[^$]+" .github/workflows/check_version.yml)
+TRANSMISSION_DEV_VERSION=$(grep -oP "(?<=TBT_DEV_VERSION: )[^$]+" .github/workflows/check_version.yml)
 NORDVPN_VERSION=$(grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' ')
 TWCV=$(grep -oP "(?<=TWCV: )[^$]+" .github/workflows/check_version.yml)
 TICV=$(grep -oP "(?<=TICV: )[^$]+" .github/workflows/check_version.yml)
