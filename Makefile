@@ -57,7 +57,8 @@ ver:	## check versions
 	echo "transmission web cntrol version: ${TWCV}" ; \
 	sed -i -E "s/ verWC=.*/ verWC=${TWCV}/" Dockerfile;\
 	echo "transmissionic version: ${TICV}" ; \
-	sed -i -E "s/ verTC=.*/ verTC=${TICV}/" Dockerfile;
+	sed -i -E "s/ verTC=.*/ verTC=${TICV}/" Dockerfile; \
+	sed -i -E "s/ nversion: \".*/ nversion: \"$${rversion}\"/" .github/workflows/build3_4.yml;
 
 run:
 	@echo "run container"
