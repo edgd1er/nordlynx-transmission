@@ -28,7 +28,7 @@ RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
 FROM debian:bookworm-slim AS debian-base
 
 ARG aptcacher=''
-ARG VERSION=3.17.0
+ARG VERSION=3.17.2
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 
@@ -44,6 +44,7 @@ LABEL maintainer="edgd1er <edgd1er@htomail.com>" \
 
 ENV TZ=${TZ}
 ENV NORDVPNCLIENT_INSTALLED=${NORDVPNCLIENT_INSTALLED}
+ENV NORDVPN_VERSION=${VERSION}
 ENV DEBIAN_FRONTEND=noninteractive
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -60,7 +61,9 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && echo "alias gettiny='grep -vP \"(^$|^#)\" /etc/tinyproxy/tinyproxy.conf'" | tee -a ~/.bashrc \
     && echo "alias getdante='grep -vP \"(^$|^#)\" /etc/dante.conf'" | tee -a ~/.bashrc \
     && echo "alias dltest='curl http://appliwave.testdebit.info/100M.iso -o /dev/null'" | tee -a ~/.bashrc \
-    && echo "alias translist='transmission-remote -n ${TRANSMISSION_RPC_USERNAME}:${TRANSMISSION_RPC_PASSWORD}  -l'" | tee -a ~/.bashrc \
+    && echo "function getversion(){ apt-get update && apt-get install -y --allow-downgrades nordvpn=\${1:-3.16.9} && supervisortctl start start_vpn; }" | tee -a ~/.bashrc \
+    && echo "function showversion(){ apt-cache show nordvpn |grep -oP '(?<=Version: ).+' | sort | awk 'NR==1 {first = \$0} END {print first\" - \"\$0; }'; }" | tee -a ~/.bashrc \
+    && echo "alias translist='[[ -z \${TRANSMISSION_RPC_USERNAME:-\"\"} ]] && transmission-remote -l || transmission-remote -n \${TRANSMISSION_RPC_USERNAME}:\${TRANSMISSION_RPC_PASSWORD}  -l'" | tee -a ~/.bashrc \
     #&& echo "alias testalias='while read -r line; do echo \$line;eval \$line;done <<<\$(grep ^alias ~/.bashrc | cut -f 2 -d"'"'"'" | tee -a ~/.bashrc \
     # allow to install resolvconf
     && echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \

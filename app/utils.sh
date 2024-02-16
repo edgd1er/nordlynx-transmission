@@ -492,7 +492,6 @@ checkLatest() {
   else
     log "**********************************************************************"
     log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
-    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
     log "**********************************************************************"
   fi
 }
@@ -505,10 +504,30 @@ checkLatestApt() {
   if [[ ${CANDIDATE} != ${VERSION} ]]; then
     log "**********************************************************************"
     log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
-    log "WARNING: please update nordvpn from version ${VERSION} to ${CANDIDATE}"
     log "**********************************************************************"
   else
     log "INFO: No update needed for nordvpn (${VERSION})"
+  fi
+}
+
+installedRequiredNordVpnClient() {
+  MAXVER=$(apt-cache policy nordvpn | grep -oP "Candidat.*: \K.+")
+  installed=$(apt-cache policy nordvpn | grep -oP "Install.*: \K.+")
+  NEW=${1:-${NORDVPN_VERSION}}
+  if [[ ${installed} != "${NEW}" ]]; then
+    log "*************************************************************************************"
+    log "INFO: current is ${installed}, installing nordvpn ${NEW}, latest version is ${MAXVER}"
+    log "*************************************************************************************"
+    log "INFO: stopping nordvpn's killswitch as 3.17.x have a bug preventing accessing to internet"
+    [[ -n $(pgrep nordvpnd 2>&1) ]] && nordvpn s killswitch false || true
+    apt-get update && apt-get install -y --allow-downgrades nordvpn=${NEW}
+    installed=${NEW}
+  fi
+  if [[ ${installed} =~ 3.17.[0-9] ]]; then
+    log "*************************************************************************************"
+    log "WARNING: 3.17.x versions are failing tests. (unable to connect). set NORDVPN_VERSION "
+    log "WARNING: to downgrade"
+    log "*************************************************************************************"
   fi
 }
 

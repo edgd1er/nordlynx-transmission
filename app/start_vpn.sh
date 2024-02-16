@@ -88,6 +88,12 @@ mkTun() {
 #Overwrite docker dns as it may fail with specific configuration (dns on server)
 echo "nameserver 1.1.1.1" >/etc/resolv.conf
 
+setTimeZone
+
+# checkLatest commented as no more updated
+checkLatestApt
+installedRequiredNordVpnClient
+
 #Define if not defined
 TECHNOLOGY=${TECHNOLOGY:-'nordlynx'}
 OBFUSCATE=${OBFUSCATE:-'off'}
@@ -99,8 +105,6 @@ stop_transmission
 if [ 1 -le $(pgrep -c nordvpnd) ]; then
   nordvpn s killswitch off
 fi
-# checkLatest commented as no more updated
-checkLatestApt
 
 [[ -z ${CONNECT} ]] && exit 1
 [[ ! -d ${RDIR} ]] && mkdir -p ${RDIR}
@@ -108,7 +112,6 @@ checkLatestApt
 mkTun
 UNP_IP=$(getCurrentWanIp)
 set_iptables DROP
-setTimeZone
 set_iptables ACCEPT
 
 if [[ -f /run/secrets/NORDVPN_PRIVKEY ]] && [[ ${TECHNOLOGY,,} == "nordlynx" ]]; then
