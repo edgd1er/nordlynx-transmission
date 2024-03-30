@@ -20,6 +20,7 @@ log() {
 
 # Source our persisted env variables from container startup
 #. env_var_scriptoi
+CREDS="$(getTransCreds)"
 
 if [[ -f ${RPC_CREDS} ]]; then
   export TRANSMISSION_RPC_USERNAME=$(head -1 ${RPC_CREDS})
