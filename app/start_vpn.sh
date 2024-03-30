@@ -147,9 +147,8 @@ if [[ ${UNP_IP} == ${currentIp} ]]; then
   exit 1
 fi
 
-if [[ ${status,,} == "unprotected" ]]; then
+if [[ ${status,,} != "connected" ]]; then
   echo "Warning, status is ${status} according to nordvpn."
-  curl -sm 10 "https://api.nordvpn.com/vpn/check/full" | jq .
 fi
 
 generateDantedConf

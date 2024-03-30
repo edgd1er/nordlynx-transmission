@@ -24,6 +24,30 @@ export GW
 export INT
 export nordvpn_api="https://api.nordvpn.com"
 
+getTransCreds() {
+  CREDS=""
+  #use secrets
+  if [[ -f run/secrets/RPC_CREDS ]]; then
+    r=($(<run/secrets/RPC_CREDS))
+    CREDS="-n ${r[0]}:${r[1]}"
+  else
+    #if env set
+    if [[ -n ${TRANSMISSION_RPC_USERNAME:-''} ]]; then
+      echo "-n ${TRANSMISSION_RPC_USERNAME}:${TRANSMISSION_RPC_PASSWORD}"
+    fi
+  fi
+  echo ${CREDS}
+}
+
+if [[ -z ${TRANSMISSION_RPC_USERNAME:-''} ]]; then
+  r=$(getTransCreds)
+  if [[ -n ${r} ]] && [[ 0 -lt ${#r[@]} ]]; then
+    ar=(${r//:/ })
+    export TRANSMISSION_RPC_USERNAME=${r[1]}
+    export TRANSMISSION_RPC_PASSWORD=${r[2]}
+  fi
+fi
+
 checkDns() {
   # Test DNS resolution
   if ! dig +short ${HEALTH_CHECK_HOST:-"google.com"} 1>/dev/null 2>&1; then
@@ -49,7 +73,7 @@ getCurrentWanIp() {
 }
 
 getVpnProtectionStatus() {
-  curl -m 10 -s https://api.nordvpn.com/vpn/check/full | jq -r '.["status"]'
+  nordvpn status | tr '[:upper:]' '[:lower:]'
 }
 
 getVpnItf() {

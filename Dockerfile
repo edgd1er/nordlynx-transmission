@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.3
-FROM --platform=$BUILDPLATFORM alpine:3.18 AS TransmissionUIs
+FROM --platform=$BUILDPLATFORM alpine:3.19 AS TransmissionUIs
 ARG TWCV="1.6.33"
 ARG TICV="1.8.0"
 #hadolint ignore=DL3018,DL3008,DL4006,DL4001
@@ -28,7 +28,7 @@ RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
 FROM debian:bookworm-slim AS debian-base
 
 ARG aptcacher=''
-ARG VERSION=3.17.2
+ARG VERSION=3.17.3
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 
@@ -56,15 +56,13 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     echo "alias checkip='curl -sm 10 \"https://zx2c4.com/ip\"'" | tee -a ~/.bashrc \
     && echo "alias checkhttp='curl -sm 10 -x http://\${HOSTNAME}:\${WEBPROXY_PORT:-8888} \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
     && echo "alias checksocks='curl -sm10 -x socks5://\${HOSTNAME}:1080 \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
-    && echo "alias checkvpn='curl -sm 10 \"https://api.nordvpn.com/vpn/check/full\" | jq -r .status'" | tee -a ~/.bashrc \
-    && echo "alias getcheck='curl -sm 10 \"https://api.nordvpn.com/vpn/check/full\" | jq . '" | tee -a ~/.bashrc \
+    && echo "alias checkvpn='nordvpn status'" | tee -a ~/.bashrc \
     && echo "alias gettiny='grep -vP \"(^$|^#)\" /etc/tinyproxy/tinyproxy.conf'" | tee -a ~/.bashrc \
     && echo "alias getdante='grep -vP \"(^$|^#)\" /etc/dante.conf'" | tee -a ~/.bashrc \
     && echo "alias dltest='curl http://appliwave.testdebit.info/100M.iso -o /dev/null'" | tee -a ~/.bashrc \
     && echo "function getversion(){ apt-get update && apt-get install -y --allow-downgrades nordvpn=\${1:-3.16.9} && supervisortctl start start_vpn; }" | tee -a ~/.bashrc \
     && echo "function showversion(){ apt-cache show nordvpn |grep -oP '(?<=Version: ).+' | sort | awk 'NR==1 {first = \$0} END {print first\" - \"\$0; }'; }" | tee -a ~/.bashrc \
-    && echo "alias translist='[[ -z \${TRANSMISSION_RPC_USERNAME:-\"\"} ]] && transmission-remote -l || transmission-remote -n \${TRANSMISSION_RPC_USERNAME}:\${TRANSMISSION_RPC_PASSWORD}  -l'" | tee -a ~/.bashrc \
-    #&& echo "alias testalias='while read -r line; do echo \$line;eval \$line;done <<<\$(grep ^alias ~/.bashrc | cut -f 2 -d"'"'"'" | tee -a ~/.bashrc \
+    && echo "alias translist='source /app/utils.sh; transmission-remote \"\$(getTransCreds)\" -l'" | tee -a ~/.bashrc \
     # allow to install resolvconf
     && echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
     && apt-get update && export DEBIAN_FRONTEND=non-interactive \
