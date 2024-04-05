@@ -8,7 +8,7 @@
 
 # nordlynx-transmission
 
-[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.17.3_amd64.changelog): 3.17.3 (30/03/24)
+[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.17.4_amd64.changelog): 3.17.4 (05/04/24)
 
 30/03/2024: --privileged required for client >= 3.17.0. problem stopping container with client 3.17.x. 
 26/06/2023: moving to debian bookworm.
@@ -97,6 +97,24 @@ sysclts:
 
 ### Container variables
 * DEBUG: (true/false) verbose mode for initial script launch and dante server.
+* - GENERATE_WIREGUARD_CONF=false #write /etc/wireguard/wg0.conf if true. Will download 56 MB, docker 317 MB of additional disk space will be used. 
+* TINYUSER= #optional, enforces authentication over tinyproxy when set with TINYPASS, add authorization with danteuser:${TINYPASS} to socks proxy
+* TINYPASS= #optional, enforces authentication over tinyproxy when set with TINYUSER.
+
+see [haugene's poject](https://github.com/haugene/docker-transmission-openvpn) for transsmission's variables.
+
+### Secrets
+
+Nordvpn, wireguard private key, transmission rpc and tinyproxy credentials may be available throught secrets (/run/secrets/nordvpn_creds, /run/secrets/tiny_creds)
+In the setup scripts, secrets values override any env values. Secrets names are fixed values: NORDVPN_CREDS, NORDVPN_PRIVKEY, RPC_CREDS, TINY_CREDS.
+
+file: ./nordvpn_creds #file with username/token in 1st line, passwd in 2nd line.
+file: ./tiny_creds #file with username/password in 1st line, passwd in 2nd line.
+these credentials can also be set with secrets.
+- NORDVPN_CREDS # nordvpn token
+- NORDVPN_PRIVKEY # wireguard private key extracted
+- RPC_CREDS # login/password for transmission
+- TINY_CREDS # username / password for http proxy. add authorization with danteuser:${TINYPASS} to socks proxy
 
 ```bash
 docker run -it --rm --cap-add NET_ADMIN -p 1081:1080 -p 8888:8888 -p 9091:9091
@@ -135,10 +153,13 @@ services:
       - NORDVPN_PASS=<pass> #Not required if using secrets
       - TRANSMISSION_RPC_USERNAME=<username> # not required if using secrets
       - TRANSMISSION_RPC_PASSWORD=<password> # not required if using secrets
+      #- TINYUSER: optional, enforces authentication over tinyproxy when set with TINYPASS. set dante password also
+      #- TINYPASS: optional, enforces authentication over tinyproxy when set with TINYUSER. set dante password also. add authorization with danteuser:${TINYPASS} to socks proxy
     secrets:
       - NORDVPN_CREDS
       - NORDVPN_PRIVKEY
       - RPC_CREDS
+      - TINY_CREDS
 
 secrets:
     NORDVPN_CREDS:
@@ -147,6 +168,9 @@ secrets:
         file: ./nordvpn_privkey # wireguard extracted private key
     RPC_CREDS:
         file: ./rpc_creds # login and password on two separate lines for transmission auth.
+    TINY_CREDS:
+        file: ./tiny_creds # login and password on two separate lines for tinyproxy and dante auth.
+
 ```
 
 

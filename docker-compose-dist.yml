@@ -24,12 +24,17 @@ services:
       - PROTOCOL=tcp # or udp (default), useful only when using openvpn. wireguard is udp only.
       - OBFUSCATE=off # or on, obfuscate only available when using openvpn(tcp or udp), hide use of vpn.
       - GENERATE_WIREGUARD_CONF=false #write /etc/wireguard/wg0.conf if true. Will download 56 MB, docker 317 MB of additional disk space will be used.
+      - TINYUSER= #optional, enforces authentication over tinyproxy when set with TINYPASS, add authorization with danteuser:${TINYPASS} to socks proxy
+      - TINYPASS= #optional, enforces authentication over tinyproxy when set with TINYUSER.
 
     secrets:
       - NORDVPN_CREDS
       #- NORDVPN_PRIVKEY
+      - TINY_CREDS
 
 secrets:
+  TINY_CREDS:
+    file: ./tiny_creds
   NORDVPN_CREDS:
     file: ./nordvpn_creds
   NORDVPN_PRIVKEY:

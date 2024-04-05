@@ -95,6 +95,20 @@ generateDantedConf() {
   INTERFACE=$(getVpnItf)
   sed "s/INTERFACE/${INTERFACE}/" ${SOURCE_DANTE_CONF} >${DANTE_CONF}
   sed -i "s/DANTE_DEBUG/${DANTE_DEBUG}/" ${DANTE_CONF}
+
+  #basic Auth
+  TCREDS_SECRET_FILE=/run/secrets/TINY_CREDS
+  if [[ -f ${TCREDS_SECRET_FILE} ]]; then
+    TINYUSER=$(head -1 ${TCREDS_SECRET_FILE})
+    TINYPASS=$(tail -1 ${TCREDS_SECRET_FILE})
+  fi
+  if [[ -n ${TINYUSER:-''} ]] && [[ -n ${TINYPASS:-''} ]]; then
+    sed -i -r "s/#?socksmethod: .*/socksmethod: username/" ${DANTE_CONF}
+    echo "danteuser:${TINYPASS}" | chpasswd
+  else
+    sed -i -r "s/socksmethod: .*/socksmethod: none/" ${DANTE_CONF}
+  fi
+
   #Allow from private addresses from clients
   if [[ -n ${LOCAL_NETWORK:-''} ]]; then
     aln=(${LOCAL_NETWORK//,/ })
@@ -167,6 +181,20 @@ generateTinyproxyConf() {
   sed -i "s/TINY_LOGLEVEL/${TINY_LOGLEVEL}/" ${CONF}
   sed -i "s/#Listen .*/Listen ${INT_IP}/" ${CONF}
   sed -i "s!#Allow INT_CIDR!Allow ${INT_CIDR}!" ${CONF}
+
+  #basic Auth
+  TCREDS_SECRET_FILE=/run/secrets/TINY_CREDS
+  if [[ -f ${TCREDS_SECRET_FILE} ]]; then
+    TINYUSER=$(head -1 ${TCREDS_SECRET_FILE})
+    TINYPASS=$(tail -1 ${TCREDS_SECRET_FILE})
+  fi
+  if [[ -n ${TINYUSER:-''} ]] && [[ -n ${TINYPASS:-''} ]]; then
+    sed -i -r "s/#?BasicAuth user password/BasicAuth ${TINYUSER} ${TINYPASS}/" ${CONF}
+    sed -i -r "s/^upstream socks5.*/upstream socks5 danteuser:${TINYPASS}@localhost:1080/" ${CONF}
+  else
+    sed -i -r "s/^BasicAuth .*/#BasicAuthuser passwordS/" ${CONF}
+    sed -i -r "s/^upstream socks5.*/upstream socks5 localhost:1080/" ${CONF}
+  fi
 
   #Allow only local network or all private address ranges
   if [[ -n ${LOCAL_NETWORK:-''} ]]; then

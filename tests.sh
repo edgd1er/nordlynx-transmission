@@ -44,7 +44,26 @@ areProxiesPortOpened() {
 }
 
 testProxies() {
-  vpnIP=$(curl -m5 -sx http://${PROXY_HOST}:${HTTP_PORT} "https://ifconfig.me/ip")
+  if [[ -f ./tiny_creds ]]; then
+    usertiny=$(head -1 ./tiny_creds)
+    passtiny=$(tail -1 ./tiny_creds)
+    echo "Getting tinyCreds from file: ${usertiny}:${passtiny}"
+    TCREDS="${usertiny}:${passtiny}@"
+    DCREDS="danteuser:${passtiny}@"
+  else
+    usertiny=$(grep -oP "(?<=- TINYUSER=)[^ ]+" docker-compose.yml)
+    passtiny=$(grep -oP "(?<=- TINYPASS=)[^ ]+" docker-compose.yml)
+    echo "Getting tinyCreds from compose: ${usertiny}:${passtiny}"
+    TCREDS="${usertiny}:${passtiny}@"
+    DCREDS="danteuser:${passtiny}@"
+  fi
+  if [[ -z ${usertiny:-''} ]]; then
+    echo "No tinyCreds"
+    TCREDS=""
+    DCREDS=""
+  fi
+  #check http proxy
+  vpnIP=$(curl -m5 -sx http://${TCREDS}${PROXY_HOST}:${HTTP_PORT} "https://ifconfig.me/ip")
   if [[ $? -eq 0 ]] && [[ ${myIp} != "${vpnIP}" ]] && [[ ${#vpnIP} -gt 0 ]]; then
     echo "http proxy: IP is ${vpnIP}, mine is ${myIp}"
   else
@@ -53,8 +72,8 @@ testProxies() {
     ((FAILED += 1))
   fi
 
-  #check detected ips
-  vpnIP=$(curl -m5 -sqx socks5://${PROXY_HOST}:${SOCK_PORT} "https://ifconfig.me/ip")
+  #check sock proxy
+  vpnIP=$(curl -m5 -sx socks5h://${DCREDS}${PROXY_HOST}:${SOCK_PORT} "https://ifconfig.me/ip") || true
   if [[ $? -eq 0 ]] && [[ ${myIp} != "${vpnIP}" ]] && [[ ${#vpnIP} -gt 0 ]]; then
     echo "socks proxy: IP is ${vpnIP}, mine is ${myIp}"
   else
