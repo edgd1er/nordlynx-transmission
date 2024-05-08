@@ -93,7 +93,8 @@ sysclts:
 * DNS: change dns
 * PORTS: add ports to allow
 * NETWORK: add subnet to allow
-* DOCKER_NET: optional,  docker CIDR extracted from container ip if not set. 
+* DOCKER_NET: optional,  docker CIDR extracted from container ip if not set.
+* IPTABLES_LEGACY: optional, default N for iptables-nft, set to Y to use iptables-legacy.
 
 ### Container variables
 * DEBUG: (true/false) verbose mode for initial script launch and dante server.
