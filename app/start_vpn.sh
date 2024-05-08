@@ -111,7 +111,14 @@ fi
 
 mkTun
 UNP_IP=$(getCurrentWanIp)
+# May be useful for Synology when iptables-nft has problems.
+if [[ ${IPTABLES_LEGACY^^} != "N" ]]; then
+   log "INFO: use iptable-legacy: https://developers.redhat.com/blog/2020/08/18/iptables-the-two-variants-and-their-relationship-with-nftables#"
+   update-alternatives --set iptables /usr/sbin/iptables-legacy
+fi
+#Drop existing rules
 set_iptables DROP
+#Accept all.
 set_iptables ACCEPT
 
 if [[ -f /run/secrets/NORDVPN_PRIVKEY ]] && [[ ${TECHNOLOGY,,} == "nordlynx" ]]; then

@@ -46,6 +46,7 @@ ENV TZ=${TZ}
 ENV NORDVPNCLIENT_INSTALLED=${NORDVPNCLIENT_INSTALLED}
 ENV NORDVPN_VERSION=${VERSION}
 ENV DEBIAN_FRONTEND=noninteractive
+ENV IPTABLES_LEGACY=N
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #add apt-cacher setting if present:
