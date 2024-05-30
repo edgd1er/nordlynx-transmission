@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.3
-FROM --platform=$BUILDPLATFORM alpine:3.19 AS TransmissionUIs
+FROM --platform=$BUILDPLATFORM alpine:3.20 AS TransmissionUIs
 ARG TWCV="1.6.33"
 ARG TICV="1.8.0"
 #hadolint ignore=DL3018,DL3008,DL4006,DL4001
@@ -55,7 +55,7 @@ WORKDIR /app
 RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
     echo "alias checkip='curl -sm 10 \"https://zx2c4.com/ip\"'" | tee -a ~/.bashrc \
-    && echo "alias checkhttp='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"\$(head -1 \${TCF})\":\"\$(tail -1 \${TCF})\"@\" || TCREDS=\"\";curl -sm 10 -x http://\${TREDS}\${HOSTNAME}:\${WEBPROXY_PORT:-8888} \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
+    && echo "alias checkhttp='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"\$(head -1 \${TCF}):\$(tail -1 \${TCF})@\" || TCREDS=\"\";curl -sm 10 -x http://\${TCREDS}\${HOSTNAME}:\${WEBPROXY_PORT:-8888} \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
     && echo "alias checksocks='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"danteuser:\"\$(tail -1 \${TCF})\"@\" || TCREDS=\"\";curl -sm10 -x socks5://\${TCREDS}\${HOSTNAME}:1080 \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
     && echo "alias checkvpn='nordvpn status'" | tee -a ~/.bashrc \
     && echo "alias gettiny='grep -vP \"(^$|^#)\" /etc/tinyproxy/tinyproxy.conf'" | tee -a ~/.bashrc \
@@ -63,7 +63,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && echo "alias dltest='curl http://appliwave.testdebit.info/100M.iso -o /dev/null'" | tee -a ~/.bashrc \
     && echo "function getversion(){ apt-get update && apt-get install -y --allow-downgrades nordvpn=\${1:-3.16.9} && supervisortctl start start_vpn; }" | tee -a ~/.bashrc \
     && echo "function showversion(){ apt-cache show nordvpn |grep -oP '(?<=Version: ).+' | sort | awk 'NR==1 {first = \$0} END {print first\" - \"\$0; }'; }" | tee -a ~/.bashrc \
-    && echo "alias translist='source /app/utils.sh; transmission-remote \"\$(getTransCreds)\" -l'" | tee -a ~/.bashrc \
+    && echo "alias translist='source /app/utils.sh; transmission-remote \$(getTransCreds) -l'" | tee -a ~/.bashrc \
     # allow to install resolvconf
     && echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
     && apt-get update && export DEBIAN_FRONTEND=non-interactive \
@@ -99,7 +99,7 @@ FROM debian-base AS new
 
 ARG aptcacher=''
 ARG DEBIAN_FRONTEND=noninteractive
-ARG TBT_VERSION=4.0.5
+ARG TBT_VERSION=4.0.6
 ARG TARGETPLATFORM
 
 ENV TZ=${TZ:-Etc/UTC}
@@ -109,7 +109,7 @@ VOLUME /data
 VOLUME /config
 
 COPY --from=TransmissionUIs /opt/transmission-ui /opt/transmission-ui
-COPY out/transmission_*.deb /tmp/
+COPY out/transmission_${TBT_VERSION}*.deb /tmp/
 
 SHELL ["/bin/bash", "-o", "pipefail", "-xcu"]
 
@@ -136,7 +136,7 @@ RUN echo "cpu: ${TARGETPLATFORM}" \
     && ln -s /usr/local/share/transmission/public_html/transmission-app.js /opt/transmission-ui/transmission-web-control/transmission-app.js \
     && ln -s /usr/local/share/transmission/public_html/index.html /opt/transmission-ui/transmission-web-control/index.original.html \
     ; fi ;fi \
-    ; rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+    ; rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/* /tmp/*
 
 COPY --chmod=755 etc/ /etc/
 COPY --chmod=755 app/ /app/

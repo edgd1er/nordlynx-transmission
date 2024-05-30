@@ -15,7 +15,7 @@ PROGRESS=auto  #text auto plain
 CACHE=""
 WHERE="--load"
 #TBT_VERSION=3.00
-TBT_VERSION=4.0.5
+TBT_VERSION=4.0.6
 #TBT_VERSION=dev # 4.1.x
 
 #exit on error
@@ -44,7 +44,7 @@ case "${TBT_VERSION}" in
   dev)
     TAG="${DUSER}/${IMAGE}:dev"
     ;;
-  4.0.5)
+  4.0.6)
     TAG="${DUSER}/${IMAGE}:v4"
     ;;
   4.1.0)
@@ -72,7 +72,7 @@ while getopts "ah?vpc" opt; do
       PTF=linux/amd64
       # load is not compatible with multi arch build
       if [[ $WHERE == "--push" ]]; then
-        PTF+=,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+        PTF+=,linux/arm64/v8,linux/arm/v7 #,linux/arm/v6
         #enable multi arch build framework
         if [ $isMultiArch -eq 0 ]; then
           enableMultiArch
