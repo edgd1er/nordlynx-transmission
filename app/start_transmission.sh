@@ -20,11 +20,11 @@ log() {
 
 # Source our persisted env variables from container startup
 #. env_var_scriptoi
-CREDS="$(getTransCreds)"
-
 if [[ -f ${RPC_CREDS} ]]; then
-  export TRANSMISSION_RPC_USERNAME=$(head -1 ${RPC_CREDS})
-  export TRANSMISSION_RPC_PASSWORD=$(tail -1 ${RPC_CREDS})
+  #use secrets
+  r=($(<${RPC_CREDS}))
+  export TRANSMISSION_RPC_USERNAME=${r[0]}
+  export TRANSMISSION_RPC_PASSWORD=${r[1]}
   if [[ "${TRANSMISSION_RPC_USERNAME}" == "${TRANSMISSION_RPC_PASSWORD}" ]]; then
     log "Error, TRANSMISSION_RPC_USERNAME and TRANSMISSION_RPC_PASSWORD have to be defined."
   fi

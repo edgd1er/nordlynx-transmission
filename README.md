@@ -98,7 +98,7 @@ sysclts:
 
 ### Container variables
 * DEBUG: (true/false) verbose mode for initial script launch and dante server.
-* - GENERATE_WIREGUARD_CONF=false #write /etc/wireguard/wg0.conf if true. Will download 56 MB, docker 317 MB of additional disk space will be used. 
+* GENERATE_WIREGUARD_CONF=false #write /etc/wireguard/wg0.conf if true. Will download 56 MB, docker 317 MB of additional disk space will be used. 
 * TINYUSER= #optional, enforces authentication over tinyproxy when set with TINYPASS, add authorization with danteuser:${TINYPASS} to socks proxy
 * TINYPASS= #optional, enforces authentication over tinyproxy when set with TINYUSER.
 

@@ -27,26 +27,17 @@ export nordvpn_api="https://api.nordvpn.com"
 getTransCreds() {
   CREDS=""
   #use secrets
-  if [[ -f run/secrets/RPC_CREDS ]]; then
-    r=($(<run/secrets/RPC_CREDS))
+  if [[ -f /run/secrets/RPC_CREDS ]]; then
+    r=($(</run/secrets/RPC_CREDS))
     CREDS="-n ${r[0]}:${r[1]}"
-  else
-    #if env set
-    if [[ -n ${TRANSMISSION_RPC_USERNAME:-''} ]]; then
-      echo "-n ${TRANSMISSION_RPC_USERNAME}:${TRANSMISSION_RPC_PASSWORD}"
-    fi
+    export TRANSMISSION_RPC_USERNAME=${r[0]}
+    export TRANSMISSION_RPC_PASSWORD=${r[1]}
+  #if env set
+  elif [[ -n ${TRANSMISSION_RPC_USERNAME:-''} ]]; then
+    CREDS="-n ${TRANSMISSION_RPC_USERNAME}:${TRANSMISSION_RPC_PASSWORD}"
   fi
-  echo ${CREDS}
+  echo "${CREDS}"
 }
-
-if [[ -z ${TRANSMISSION_RPC_USERNAME:-''} ]]; then
-  r=$(getTransCreds)
-  if [[ -n ${r} ]] && [[ 0 -lt ${#r[@]} ]]; then
-    ar=(${r//:/ })
-    export TRANSMISSION_RPC_USERNAME=${r[1]}
-    export TRANSMISSION_RPC_PASSWORD=${r[2]}
-  fi
-fi
 
 checkDns() {
   # Test DNS resolution
@@ -480,10 +471,13 @@ connectWireguardVpn() {
 }
 
 enforce_proxies_nordvpn() {
+  T_PORT=$(grep -oP "(?<=rpc-port\": )[^,]+" /config/transmission-home/settings.json)
+  T_PORT=${T_PORT:-9091}
   log "proxies: allow ports 1080, ${WEBPROXY_PORT}"
   nordvpn whitelist add port 1080 protocol TCP || true
   nordvpn whitelist add port 1080 protocol UDP || true
   nordvpn whitelist add port ${WEBPROXY_PORT} protocol TCP || true
+  nordvpn whitelist add port ${T_PORT} protocol TCP || true
   iptables -L
 }
 
@@ -650,3 +644,8 @@ testsproxy() {
     log "ERROR: testsproxy: curl through socks proxy to https://ifconfig.me/ip failed"
   fi
 }
+
+#export creds if set as secrets
+if [[ -z ${TRANSMISSION_RPC_USERNAME:-''} ]]; then
+  getTransCreds 2>&1 >/dev/null
+fi
