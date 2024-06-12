@@ -8,7 +8,7 @@ on:
 env:
   tbt_version3: "3.00"
   tbt_version4: "4.0.6"
-  nversion: "3.18.1"
+  nversion: "3.18.2"
   twcv: "1.6.33"
   ticv: "1.8.0"
 
