@@ -99,7 +99,7 @@ FROM debian-base AS new
 
 ARG aptcacher=''
 ARG DEBIAN_FRONTEND=noninteractive
-ARG TBT_VERSION=4.0.6
+ARG TBT_VERSION=4.1.0
 ARG TARGETPLATFORM
 
 ENV TZ=${TZ:-Etc/UTC}
