@@ -15,8 +15,8 @@ PROGRESS=auto  #text auto plain
 CACHE=""
 WHERE="--load"
 #TBT_VERSION=3.00
-TBT_VERSION=4.0.6
-#TBT_VERSION=dev # 4.1.x
+#TBT_VERSION=4.0.6
+TBT_VERSION=4.1.0 #dev # 4.1.x
 
 #exit on error
 set -e -u -o pipefail
@@ -106,8 +106,8 @@ while getopts "ah?vpc" opt; do
     docker buildx build --builder=amd-arm ${WHERE} --platform ${PTF} -f ${DKRFILE} --build-arg TBT_VERSION=$TBT_VERSION \
       $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher --provenance false -t $TAG .
     #done
-    #docker manifest inspect $TAG | grep -E "architecture|variant"
-    docker manifest inspect $TAG | jq -r '.manifests[].platform|[.architecture,.os,.variant]| @tsv'
+    docker manifest inspect $TAG #| grep -E "architecture|variant"
+    #docker manifest inspect $TAG | jq -r '.manifests[].platform|[.architecture,.os,.variant]| @tsv'
     ;;
   h | \?)
     echo -e "script:\t${0}\n-a\tbuild for all plateforms\n-c\tBuild image\n-p\tBuild packages"

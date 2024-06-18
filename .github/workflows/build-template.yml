@@ -59,7 +59,7 @@ jobs:
       - name: "show vars"
         run: echo "TBT_VERSION=${{ inputs.tbt_version }}, VERSION=${{ inputs.version }}, TWCV=${{ inputs.twcv }}, TICV=${{ inputs.ticv }}"
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: ${{ inputs.build-context }}

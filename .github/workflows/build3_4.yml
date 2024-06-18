@@ -8,6 +8,7 @@ on:
 env:
   tbt_version3: "3.00"
   tbt_version4: "4.0.6"
+  tbt_versiond: "4.1.0"
   nversion: "3.18.2"
   twcv: "1.6.33"
   ticv: "1.8.0"
@@ -52,7 +53,7 @@ jobs:
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
-      tbt_version: ${{ needs.show_vars.outputs.tbt_version4}}
+      tbt_version: ${{ needs.show_vars.outputs.tbt_version4 }}
       tag: "edgd1er/nordlynx-transmission:v4,edgd1er/nordlynx-transmission:latest"
       version: ${{ needs.show_vars.outputs.nversion }}
       twcv: ${{ needs.show_vars.outputs.twcv }}
@@ -66,7 +67,7 @@ jobs:
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
-      tbt_version: "dev"
+      tbt_version: "${{ needs.show_vars.outputs.tbt_versiond }}"
       tag: "edgd1er/nordlynx-transmission:dev"
       ptf: "linux/amd64,linux/arm64,linux/arm/v7"
       version: ${{ needs.show_vars.outputs.nversion }}
