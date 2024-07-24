@@ -8,7 +8,7 @@
 
 # nordlynx-transmission
 
-[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.18.2_amd64.changelog): 3.18.2 (11/05/24)
+[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.18.3_amd64.changelog): 3.18.3 (24/07/24)
 
 30/03/2024: --privileged required for client >= 3.17.0. problem stopping container with client 3.17.x. 
 26/06/2023: moving to debian bookworm.
