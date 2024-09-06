@@ -18,17 +18,17 @@ RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
     && mv /opt/transmission-ui/kettu-master /opt/transmission-ui/kettu \
     && echo "Install Transmission-Web-Control v${TWCV}" \
     && mkdir /opt/transmission-ui/transmission-web-control \
-    && wget --no-cache -O- "https://github.com/transmission-web-control/transmission-web-control/releases/download/v${TWCV}/dist.tar.gz" | tar -C /opt/transmission-ui/transmission-web-control/ --strip-components=2 -xz \
+    && wget --no-cache -qO- "https://github.com/transmission-web-control/transmission-web-control/releases/download/v${TWCV}/dist.tar.gz" | tar -C /opt/transmission-ui/transmission-web-control/ --strip-components=2 -xz \
     #&& ver=$(curl -s "https://api.github.com/repos/6c65726f79/Transmissionic/releases/latest" | jq -r .tag_name) \
     && echo "Install Transmissionic v${TICV}" \
-    && wget -O- "https://github.com/6c65726f79/Transmissionic/releases/download/v${TICV}/Transmissionic-webui-v${TICV}.zip" | unzip -d /opt/transmission-ui/ - \
+    && wget -qO- "https://github.com/6c65726f79/Transmissionic/releases/download/v${TICV}/Transmissionic-webui-v${TICV}.zip" | unzip -d /opt/transmission-ui/ - \
     && mv /opt/transmission-ui/web /opt/transmission-ui/transmissionic
 
 #FROM debian:bullseye-slim AS debian-base
 FROM debian:bookworm-slim AS debian-base
 
 ARG aptcacher=''
-ARG VERSION=3.18.4
+ARG VERSION=3.18.5
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 
