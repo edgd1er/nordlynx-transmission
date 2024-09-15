@@ -7,6 +7,12 @@ N=3
 #Functions
 [[ -f /app/utils.sh ]] && source /app/utils.sh || true
 
+#/data/watch writable
+checkRights
+
+#check all services are running
+if ! checkServices; then exit 1; fi
+
 #check if eth0 ip has changed, change tinyproxy listen address if needed.
 changeTinyListenAddress
 
