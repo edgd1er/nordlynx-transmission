@@ -645,6 +645,28 @@ testsproxy() {
   fi
 }
 
+checkRights(){
+  touch /data/watch/tt
+  if [[ ! $? ]]; then
+    log "Error, cannot write to /data/watch"
+    return 1
+  else
+    rm /data/watch/tt
+  fi
+  return 0
+}
+
+checkServices() {
+  for s in nordvpnd dante tinyproxy transmission; do
+    sta=$(supervisorctl status $s | grep -ic running)
+    if [[ 0 -eq ${sta} ]]; then
+      log "$s is stopped."
+      return 1
+    fi
+  done
+  return 0
+}
+
 #export creds if set as secrets
 if [[ -z ${TRANSMISSION_RPC_USERNAME:-''} ]]; then
   getTransCreds 2>&1 >/dev/null
