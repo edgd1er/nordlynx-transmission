@@ -95,9 +95,10 @@ generateDantedConf() {
   fi
   if [[ -n ${TINYUSER:-''} ]] && [[ -n ${TINYPASS:-''} ]]; then
     sed -i -r "s/#?socksmethod: .*/socksmethod: username/" ${DANTE_CONF}
-    echo "danteuser:${TINYPASS}" | chpasswd
+    [[ 0 -eq $(grep -c ${TINYUSER} /etc/passwd) ]] && adduser --gecos "" --no-create-home --disabled-login ${TINYUSER} || true
+    echo "${TINYUSER}:${TINYPASS}" | chpasswd
   else
-    sed -i -r "s/socksmethod: .*/socksmethod: none/" ${DANTE_CONF}
+    sed -i -r "s/#?socksmethod: .*/socksmethod: none/" ${DANTE_CONF}
   fi
 
   #Allow from private addresses from clients
@@ -181,10 +182,10 @@ generateTinyproxyConf() {
   fi
   if [[ -n ${TINYUSER:-''} ]] && [[ -n ${TINYPASS:-''} ]]; then
     sed -i -r "s/#?BasicAuth user password/BasicAuth ${TINYUSER} ${TINYPASS}/" ${CONF}
-    sed -i -r "s/^upstream socks5.*/upstream socks5 danteuser:${TINYPASS}@localhost:1080/" ${CONF}
+    sed -i -r "s/^#?upstream socks5.*/upstream socks5 ${TINYUSER}:${TINYPASS}@localhost:1080/" ${CONF}
   else
-    sed -i -r "s/^BasicAuth .*/#BasicAuthuser passwordS/" ${CONF}
-    sed -i -r "s/^upstream socks5.*/upstream socks5 localhost:1080/" ${CONF}
+    sed -i -r "s/^#?BasicAuth .*/#BasicAuthuser password/" ${CONF}
+    sed -i -r "s/^#?upstream socks5.*/upstream socks5 localhost:1080/" ${CONF}
   fi
 
   #Allow only local network or all private address ranges
@@ -627,6 +628,16 @@ stop_transmission() {
 ## tests functions
 testhproxy() {
   PROXY_HOST=$(getEthIp)
+  TCREDS_SECRET_FILE=/run/secrets/TINY_CREDS
+  if [[ -f ${TCREDS_SECRET_FILE} ]]; then
+    TINYUSER=$(head -1 ${TCREDS_SECRET_FILE})
+    TINYPASS=$(tail -1 ${TCREDS_SECRET_FILE})
+  fi
+  if [[ -n ${TINYUSER:-''} ]] && [[ -n ${TINYPASS:-''} ]]; then
+    [[ 0 -eq $(grep -c ${TINYUSER} /etc/passwd) ]] && adduser --gecos "" --no-create-home --disabled-password --disabled-login ${TINYUSER} || true
+    echo "${TINYUSER}:${TINYPASS}" | chpasswd
+    sed -i -r "s/#?socksmethod: .*/socksmethod: username/" ${DANTE_CONF}
+  fi
   IP=$(curl -m5 -sqx http://${PROXY_HOST}:${WEBPROXY_PORT} "https://ifconfig.me/ip")
   if [[ $? -eq 0 ]]; then
     log "IP through http proxy is ${IP}"

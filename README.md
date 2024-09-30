@@ -115,7 +115,7 @@ these credentials can also be set with secrets.
 - NORDVPN_CREDS # nordvpn token
 - NORDVPN_PRIVKEY # wireguard private key extracted
 - RPC_CREDS # login/password for transmission
-- TINY_CREDS # username / password for http proxy. add authorization with danteuser:${TINYPASS} to socks proxy
+- TINY_CREDS # username / password for http/socks proxy
 
 ```bash
 docker run -it --rm --cap-add NET_ADMIN -p 1081:1080 -p 8888:8888 -p 9091:9091
@@ -154,8 +154,8 @@ services:
       - NORDVPN_PASS=<pass> #Not required if using secrets
       - TRANSMISSION_RPC_USERNAME=<username> # not required if using secrets
       - TRANSMISSION_RPC_PASSWORD=<password> # not required if using secrets
-      #- TINYUSER: optional, enforces authentication over tinyproxy when set with TINYPASS. set dante password also
-      #- TINYPASS: optional, enforces authentication over tinyproxy when set with TINYUSER. set dante password also. add authorization with danteuser:${TINYPASS} to socks proxy
+      #- TINYUSER: optional, enforces authentication over tinyproxy when set with TINYPASS. set dante username also.
+      #- TINYPASS: optional, enforces authentication over tinyproxy when set with TINYUSER. set dante password also.
     secrets:
       - NORDVPN_CREDS
       - NORDVPN_PRIVKEY
