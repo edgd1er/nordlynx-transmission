@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 
 #vars
+CPSE=compose.yml
 PROXY_HOST="localhost"
 SOCK_PORT=2080 # proxy socks
 HTTP_PORT=2888 # proxy http
+HTTP_PORT=28$(grep -oP '(?<=\- "28)[^:]+' ${CPSE})
+SOCK_PORT=20$(grep -oP '(?<=\- "20)[^:]+' ${CPSE})
 SERVICE=transmission
 TRANS_PORT=9091
 #Common
 FAILED=0
 INTERVAL=4
 BUILD=1
-CPSE=docker-compose.yml
 
 #Functions
 buildAndWait() {
@@ -50,13 +52,14 @@ testProxies() {
     passtiny=$(tail -1 ./tiny_creds)
     echo "Getting tinyCreds from file: ${usertiny}:${passtiny}"
     TCREDS="${usertiny}:${passtiny}@"
-    DCREDS="danteuser:${passtiny}@"
+    DCREDS=${TCREDS}
   else
     usertiny=$(grep -oP "(?<=- TINYUSER=)[^ ]+" ${CPSE})
     passtiny=$(grep -oP "(?<=- TINYPASS=)[^ ]+" ${CPSE})
     echo "Getting tinyCreds from compose: ${usertiny}:${passtiny}"
     TCREDS="${usertiny}:${passtiny}@"
-    DCREDS="danteuser:${passtiny}@"
+    DCREDS=${TCREDS}
+
   fi
   if [[ -z ${usertiny:-''} ]]; then
     echo "No tinyCreds"
@@ -64,7 +67,7 @@ testProxies() {
     DCREDS=""
   fi
   #check http proxy
-  vpnIP=$(curl -m5 -sx http://${TCREDS}${PROXY_HOST}:${HTTP_PORT} "https://ifconfig.me/ip")
+  vpnIP=$(curl -4m5 -sx http://${TCREDS}${PROXY_HOST}:${HTTP_PORT} "https://ifconfig.me/ip")
   if [[ $? -eq 0 ]] && [[ ${myIp} != "${vpnIP}" ]] && [[ ${#vpnIP} -gt 0 ]]; then
     echo "http proxy: IP is ${vpnIP}, mine is ${myIp}"
   else
@@ -74,7 +77,7 @@ testProxies() {
   fi
 
   #check sock proxy
-  vpnIP=$(curl -m5 -sx socks5h://${DCREDS}${PROXY_HOST}:${SOCK_PORT} "http://ipv4.lafibre.info/ip.php") || true
+  vpnIP=$(curl -4m5 -sx socks5h://${DCREDS}${PROXY_HOST}:${SOCK_PORT} "http://ipv4.lafibre.info/ip.php") || true
   if [[ $? -eq 0 ]] && [[ ${myIp} != "${vpnIP}" ]] && [[ ${#vpnIP} -gt 0 ]]; then
     echo "socks proxy: IP is ${vpnIP}, mine is ${myIp}"
   else
@@ -109,24 +112,30 @@ getTransWebPAge(){
 [[ -e /.dockerenv ]] && PROXY_HOST=
 
 #Check ports
-[[ ${1:-''} == "-t" ]] && BUILD=0 || BUILD=1
+#Main
+[[ -e /.dockerenv ]] && PROXY_HOST=
 
-#myIp=$(curl -m5 -sq https://ifconfig.me/ip4)
-myIp=$(curl -m5 -sq http://ipv4.lafibre.info/ip.php)
-myIp6=$(curl -m5 -sq http://ipv6.lafibre.info/ip.php)
+#Check ports
+[[ ${1:-''} == "-t" ]] && BUILD=0 || BUILD=1
+[[ -z $(which nc) ]] && echo "No nc found" && exit || true
+
+myIp=$(curl -4m5 -sq https://ifconfig.me/ip)
 
 if [[ "localhost" == "${PROXY_HOST}" ]] && [[ 1 -eq ${BUILD} ]]; then
   buildAndWait
+  echo "***************************************************"
+  echo "Testing container"
+  echo "***************************************************"
+  # check returned IP through http and socks proxy
+  testProxies
+  getInterfacesInfo
+  [[ 1 -eq ${BUILD} ]] && docker compose down
+else
+  echo "***************************************************"
+  echo "Testing container"
+  echo "***************************************************"
+  # check returned IP through http and socks proxy
+  testProxies
+  getInterfacesInfo
 fi
-echo "***************************************************"
-echo "Testing container"
-echo "***************************************************"
-# check returned IP through http and socks proxy
-areProxiesPortOpened
-testProxies
-getInterfacesInfo
-getAliasesOutput
-getTransWebPAge
-docker compose logs >l
-if [[ "localhost" == "${PROXY_HOST}" ]] && [[ 1 -eq ${BUILD} ]]; then docker compose down; fi
 
