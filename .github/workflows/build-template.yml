@@ -27,7 +27,7 @@ on:
       ptf:
         required: false
         type: string
-        default: "linux/amd64,linux/arm64,linux/arm/v7"
+        default: "linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6"
 
 env:
   PUSHFLAG: ${{ github.ref == 'refs/heads/main' }}
