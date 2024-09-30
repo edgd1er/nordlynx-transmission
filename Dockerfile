@@ -54,18 +54,8 @@ WORKDIR /app
 #hadolint ignore=DL3018,DL3008
 RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
-    echo "alias checkip='curl -sm 10 \"https://zx2c4.com/ip\"'" | tee -a ~/.bashrc \
-    && echo "alias checkhttp='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"\$(head -1 \${TCF}):\$(tail -1 \${TCF})@\" || TCREDS=\"\";curl -sm 10 -x http://\${TCREDS}\${HOSTNAME}:\${WEBPROXY_PORT:-8888} \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
-    && echo "alias checksocks='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"danteuser:\"\$(tail -1 \${TCF})\"@\" || TCREDS=\"\";curl -sm10 -x socks5://\${TCREDS}\${HOSTNAME}:1080 \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
-    && echo "alias checkvpn='nordvpn status'" | tee -a ~/.bashrc \
-    && echo "alias gettiny='grep -vP \"(^$|^#)\" /etc/tinyproxy/tinyproxy.conf'" | tee -a ~/.bashrc \
-    && echo "alias getdante='grep -vP \"(^$|^#)\" /etc/dante.conf'" | tee -a ~/.bashrc \
-    && echo "alias dltest='curl http://appliwave.testdebit.info/100M.iso -o /dev/null'" | tee -a ~/.bashrc \
-    && echo "function getversion(){ apt-get update && apt-get install -y --allow-downgrades nordvpn=\${1:-3.16.9} && supervisortctl start start_vpn; }" | tee -a ~/.bashrc \
-    && echo "function showversion(){ apt-cache show nordvpn |grep -oP '(?<=Version: ).+' | sort | awk 'NR==1 {first = \$0} END {print first\" - \"\$0; }'; }" | tee -a ~/.bashrc \
-    && echo "alias translist='source /app/utils.sh; transmission-remote \$(getTransCreds) -l'" | tee -a ~/.bashrc \
     # allow to install resolvconf
-    && echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
+    echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
     && apt-get update && export DEBIAN_FRONTEND=non-interactive \
     && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
     ca-certificates tzdata dante-server net-tools unzip unrar-free bc tar bash dnsutils \
@@ -86,9 +76,6 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     #chmod a+x /app/*.sh  \
     && addgroup --system vpn && useradd -lNms /bin/bash -u "${NUID:-1000}" -G nordvpn,vpn nordclient \
     && apt-get clean all && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    ## dante user
-    && useradd -r -s /bin/false danteuser \
-    && echo "danteuser:None" | chpasswd \
     #transmission user
     && groupmod -g 1000 users && useradd -u 911 -U -d /config -s /bin/false abc && usermod -G users abc \
     && if [[ -n ${aptcacher} ]]; then rm /etc/apt/apt.conf.d/01proxy; fi \
@@ -138,7 +125,7 @@ RUN echo "cpu: ${TARGETPLATFORM}" \
     ; fi ;fi \
     && echo "alias checkip='curl -sm 10 \"https://zx2c4.com/ip\";echo'" | tee -a ~/.bashrc \
     && echo "alias checkhttp='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"\$(head -1 \${TCF}):\$(tail -1 \${TCF})@\" || TCREDS=\"\";curl -4 -sm 10 -x http://\${TCREDS}\${HOSTNAME}:\${WEBPROXY_PORT:-8888} \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
-    && echo "alias checksocks='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"danteuser:\"\$(tail -1 \${TCF})\"@\" || TCREDS=\"\";curl -4 -sm10 -x socks5h://\${TCREDS}\${HOSTNAME}:1080 \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
+    && echo "alias checksocks='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"\$(head -1 \${TCF}):\$(tail -1 \${TCF})@\" || TCREDS=\"\";curl -4 -sm 10 -x socks5h://\${TCREDS}\${HOSTNAME}:-1080} \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
     && echo "alias checkvpn='nordvpn status | grep -oP \"(?<=Status: ).*\"'" | tee -a ~/.bashrc \
     && echo "alias gettiny='grep -vP \"(^$|^#)\" /etc/tinyproxy/tinyproxy.conf'" | tee -a ~/.bashrc \
     && echo "alias getdante='grep -vP \"(^$|^#)\" /etc/dante.conf'" | tee -a ~/.bashrc \
