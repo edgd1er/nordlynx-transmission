@@ -49,9 +49,9 @@ ver:	## check versions
 	rversion=$$(curl -qLs "${NORDVPN_PACKAGE}" | grep -oP "(?<=Version: )(.*)" | sort -t. -n -k1,1 -k2,2 -k3,3 | tail -1); \
 	echo "local  version: $${lversion}" ;\
 	echo "remote version: $${rversion}" ;\
-	if [[ $${lversion} != $${rversion} ]]; then sed -i -E "s/ VERSION:.*/ VERSION: $${rversion}/" docker-compose.yml ; \
+	if [[ $${lversion} != $${rversion} ]]; then sed -i -E "s/ VERSION:.*/ VERSION: $${rversion}/" compose.yml ; \
 	sed -i -E "s/ VERSION=.*/ VERSION=$${rversion}/" Dockerfile ; fi ; \
-	grep -E ' VERSION[:=].+' Dockerfile docker-compose.yml ; \
+	grep -E ' VERSION[:=].+' Dockerfile compose.yml ; \
 	echo "transmission version: ${TBT_V4}" ; \
 	sed -i -E "s/ARG TBT_VERSION=.*/ARG TBT_VERSION=${TBT_V4}/" Dockerfile;\
 	echo "transmission web cntrol version: ${TWCV}" ; \
