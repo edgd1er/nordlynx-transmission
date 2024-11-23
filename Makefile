@@ -7,8 +7,7 @@ NVPNVER:= $(shell grep -oE 'changelog.: .+' README.md | cut -f2 -d' ')
 # Enable BuildKit for Docker build
 export DOCKER_BUILDKIT:=1
 export NORDVPN_PACKAGE:=https://repo.nordvpn.com/deb/nordvpn/debian/dists/stable/main/binary-amd64/Packages
-APTCACHER:="192.168.53.208"
-#APTCACHER:="192.168.43.61"
+APTCACHER:=""
 LIBEVENT_VERSION:= $(shell grep -oP '(?<= LIBEVENT_VERSION: ).+' .github/workflows/check_version.yml | tr -d '"')
 TBT_V4:=$(shell grep -oP '(?<= TBT_VERSION: ).+' .github/workflows/check_version.yml | tr -d '"' )
 TBT_V3:=$(shell grep -oP '(?<=#TBT_VERSION: ).+' .github/workflows/check_version.yml | tr -d '"' )

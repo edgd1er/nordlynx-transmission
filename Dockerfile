@@ -68,7 +68,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     # nordvpn requirements \
     iproute2 iptables readline-common dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client \
     gpg-wks-server gpgconf gpgsm libassuan0 libksba8 libnpth0 libreadline8 libsqlite3-0 lsb-base pinentry-curses; fi \
-    && wget -nv -t10 -O /tmp/nordrepo.deb https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/n/nordvpn/nordvpn_3.19.1_$(dpkg --print-architecture).deb \
+    && wget -nv -t10 -O /tmp/nordrepo.deb  "https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/n/nordvpn-release/nordvpn-release_1.0.0_all.deb" \
     && apt-get install -qqy --no-install-recommends /tmp/nordrepo.deb && apt-get update \
     && apt-get install -qqy --no-install-recommends -y nordvpn="${VERSION}" \
     #&& apt-get remove -y wget nordvpn-release \
