@@ -88,15 +88,10 @@ generateDantedConf() {
   sed -i "s/DANTE_DEBUG/${DANTE_DEBUG}/" ${DANTE_CONF}
 
   #basic Auth
-  TCREDS_SECRET_FILE=/run/secrets/TINY_CREDS
-  if [[ -f ${TCREDS_SECRET_FILE} ]]; then
-    TINYUSER=$(head -1 ${TCREDS_SECRET_FILE})
-    TINYPASS=$(tail -1 ${TCREDS_SECRET_FILE})
-  fi
-  if [[ -n ${TINYUSER:-''} ]] && [[ -n ${TINYPASS:-''} ]]; then
+  TINYCRED=$(getTinyCred)
+  if [[ -n ${TINYCRED:-''} ]]; then
+    createUserForAuthifNeeded ${TINYCRED}
     sed -i -r "s/#?socksmethod: .*/socksmethod: username/" ${DANTE_CONF}
-    [[ 0 -eq $(grep -c ${TINYUSER} /etc/passwd) ]] && adduser --gecos "" --no-create-home --disabled-login ${TINYUSER} || true
-    echo "${TINYUSER}:${TINYPASS}" | chpasswd
   else
     sed -i -r "s/#?socksmethod: .*/socksmethod: none/" ${DANTE_CONF}
   fi
@@ -578,6 +573,36 @@ installedRequiredNordVpnClient() {
   fi
 }
 
+createUserForAuthifNeeded() {
+  ARG1=${1:-':'}
+  IFS=':' read -r -a arr <<<"${ARG1}"
+  TINYUSER=${arr[0]}
+  #expected error when user does not exist
+  if [[ -n ${TINYUSER} ]]; then
+    TINYPASS=${arr[1]::-1}
+    tinyid=$(id -u ${TINYUSER}) || true
+    if [[ -z ${tinyid} ]]; then
+      adduser --gecos "" --no-create-home --disabled-password  --shell /usr/sbin/nologin --ingroup tinyproxy ${TINYUSER}
+    fi
+    echo "${TINYUSER}:${TINYPASS}" |chpasswd
+  fi
+
+}
+
+getTinyCred() {
+  TCREDS_SECRET_FILE=/run/secrets/TINY_CREDS
+  if [[ -f ${TCREDS_SECRET_FILE} ]]; then
+    TINYUSER=$(head -1 ${TCREDS_SECRET_FILE})
+    TINYPASS=$(tail -1 ${TCREDS_SECRET_FILE})
+  fi
+  if [[ -n ${TINYUSER:-''} ]] && [[ -n ${TINYPASS:-''} ]]; then
+    TINYCRED="${TINYUSER}:${TINYPASS}@"
+  else
+    TINYCRED=""
+  fi
+  echo "${TINYCRED}"
+}
+
 getTinyConf() {
   grep -v ^# /etc/tinyproxy/tinyproxy.conf | sed "/^$/d"
 }
@@ -628,17 +653,8 @@ stop_transmission() {
 ## tests functions
 testhproxy() {
   PROXY_HOST=$(getEthIp)
-  TCREDS_SECRET_FILE=/run/secrets/TINY_CREDS
-  if [[ -f ${TCREDS_SECRET_FILE} ]]; then
-    TINYUSER=$(head -1 ${TCREDS_SECRET_FILE})
-    TINYPASS=$(tail -1 ${TCREDS_SECRET_FILE})
-  fi
-  if [[ -n ${TINYUSER:-''} ]] && [[ -n ${TINYPASS:-''} ]]; then
-    [[ 0 -eq $(grep -c ${TINYUSER} /etc/passwd) ]] && adduser --gecos "" --no-create-home --disabled-password --disabled-login ${TINYUSER} || true
-    echo "${TINYUSER}:${TINYPASS}" | chpasswd
-    sed -i -r "s/#?socksmethod: .*/socksmethod: username/" ${DANTE_CONF}
-  fi
-  IP=$(curl -m5 -sqx http://${PROXY_HOST}:${WEBPROXY_PORT} "https://ifconfig.me/ip")
+  TINYCRED=$(getTinyCred)
+  IP=$(curl -m5 -sqx http://${TINYCRED}${PROXY_HOST}:${WEBPROXY_PORT} "https://ifconfig.me/ip")
   if [[ $? -eq 0 ]]; then
     log "IP through http proxy is ${IP}"
   else
@@ -648,7 +664,8 @@ testhproxy() {
 
 testsproxy() {
   PROXY_HOST=$(getEthIp)
-  IP=$(curl -m5 -sqx socks5://${PROXY_HOST}:1080 "https://ifconfig.me/ip")
+  TINYCRED=$(getTinyCred)
+  IP=$(curl -m5 -sqx socks5://${TINYCRED}${PROXY_HOST}:1080 "https://ifconfig.me/ip")
   if [[ $? -eq 0 ]]; then
     log "IP through socks proxy is ${IP}"
   else
@@ -656,7 +673,7 @@ testsproxy() {
   fi
 }
 
-checkRights(){
+checkRights() {
   touch /data/watch/tt
   if [[ ! $? ]]; then
     log "Error, cannot write to /data/watch"
