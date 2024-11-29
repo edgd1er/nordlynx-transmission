@@ -8,7 +8,7 @@
 
 # nordlynx-transmission
 
-[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.19.1_amd64.changelog): 3.19.1 (18/11/24)
+[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_3.19.2_amd64.changelog): 3.19.2 (28/11/24)
 
 2024/11/18, nordvpn reorganized its repository and removed pre 3.17.0 versions. privileged mode is now required for the container.
 30/03/2024: --privileged required for client >= 3.17.0. problem stopping container with client 3.17.x. 
