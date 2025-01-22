@@ -2,6 +2,7 @@
 FROM --platform=$BUILDPLATFORM alpine:3.20 AS TransmissionUIs
 ARG TWCV="1.6.33"
 ARG TICV="1.8.0"
+
 #hadolint ignore=DL3018,DL3008,DL4006,DL4001
 RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
     && export \
@@ -18,11 +19,15 @@ RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
     && mv /opt/transmission-ui/kettu-master /opt/transmission-ui/kettu \
     && echo "Install Transmission-Web-Control v${TWCV}" \
     && mkdir /opt/transmission-ui/transmission-web-control \
-    && wget --no-cache -qO- "https://github.com/transmission-web-control/transmission-web-control/releases/download/v${TWCV}/dist.tar.gz" | tar -C /opt/transmission-ui/transmission-web-control/ --strip-components=2 -xz \
+    #&& curl -sL $(curl -s https://api.github.com/repos/ronggang/transmission-web-control/releases/latest | jq --raw-output '.tarball_url') | tar -C /opt/transmission-ui/transmission-web-control/ --strip-components=2 -xz \
+    #&& wget --no-cache -qO- "https://github.com/transmission-web-control/transmission-web-control/releases/download/v${TWCV}/dist.tar.gz" | tar -C /opt/transmission-ui/transmission-web-control/ --strip-components=2 -xz \
     #&& ver=$(curl -s "https://api.github.com/repos/6c65726f79/Transmissionic/releases/latest" | jq -r .tag_name) \
     && echo "Install Transmissionic v${TICV}" \
     && wget -qO- "https://github.com/6c65726f79/Transmissionic/releases/download/v${TICV}/Transmissionic-webui-v${TICV}.zip" | unzip -d /opt/transmission-ui/ - \
     && mv /opt/transmission-ui/web /opt/transmission-ui/transmissionic
+
+#copied transmission web control from local archive
+ADD transmission_web_control_1.6.33.tar.xz /opt/transmission-ui/
 
 #FROM debian:bullseye-slim AS debian-base
 FROM debian:bookworm-slim AS debian-base

@@ -53,7 +53,7 @@ ver:	## check versions
 	grep -E ' VERSION[:=].+' Dockerfile compose.yml ; \
 	echo "transmission version: ${TBT_V4}" ; \
 	sed -i -E "s/ARG TBT_VERSION=.*/ARG TBT_VERSION=${TBT_V4}/" Dockerfile;\
-	echo "transmission web cntrol version: ${TWCV}" ; \
+	echo "transmission web control version: ${TWCV}" ; \
 	sed -i -E "s/ verWC=.*/ verWC=${TWCV}/" Dockerfile;\
 	echo "transmissionic version: ${TICV}" ; \
 	sed -i -E "s/ verTC=.*/ verTC=${TICV}/" Dockerfile; \

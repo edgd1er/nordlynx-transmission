@@ -40,7 +40,8 @@ checkTbt() {
 }
 
 checkUIs() {
-  ver=$(curl -s ${HEADERTOKEN} "https://api.github.com/repos/transmission-web-control/transmission-web-control/releases/latest" | jq -r .tag_name)
+  #ver=$(curl -s ${HEADERTOKEN} "https://api.github.com/repos/transmission-web-control/transmission-web-control/releases/latest" | jq -r .tag_name)
+  ver=$(curl -s ${HEADERTOKEN} "https://api.github.com/repos/ronggang/transmission-web-control/releases/latest" | jq -r .tag_name)
   [[ v${TWCV} == ${ver} ]] && coul=${GREEN} || coul=${RED}
   echo -e "transmission-web-control version: ${coul}v${TWCV}${coul}${NC}, latest github transmission version: ${coul}${ver}${NC}"
   ver=$(curl -s ${HEADERTOKEN} "https://api.github.com/repos/6c65726f79/Transmissionic/releases/latest" | jq -r .tag_name)
