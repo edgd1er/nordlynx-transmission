@@ -9,7 +9,7 @@ env:
   TBT_VERSION: 4.0.6
   TBT_DEV_VERSION: 4.1.0
   NORDVPN_PACKAGE: https://repo.nordvpn.com/deb/nordvpn/debian/dists/stable/main/binary-amd64/Packages
-  TWCV: 1.6.33
+  TWCV: 1.6.1-update1
   TICV: 1.8.0
 
 jobs:
@@ -66,7 +66,8 @@ jobs:
       - name: get ui's latest version
         id: getuilatestversion
         run: |
-          ver=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/transmission-web-control/transmission-web-control/releases/latest" | jq -r .tag_name)
+          #ver=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/transmission-web-control/transmission-web-control/releases/latest" | jq -r .tag_name)
+          ver=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/ronggang/transmission-web-control/releases/latest" | jq -r .tag_name)
           echo -e "transmission-web-control version: ${{ env.TWCV }}, latest github transmission version: ${ver}"
           if [[ v${{ env.TWCV }} != ${ver} ]]; then echo ERROR; fi
           ver=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/6c65726f79/Transmissionic/releases/latest" | jq -r .tag_name)
