@@ -86,6 +86,7 @@ mkTun() {
 
 #Main
 #Overwrite docker dns as it may fail with specific configuration (dns on server)
+chattr -i /etc/resolv.conf
 echo "nameserver 1.1.1.1" >/etc/resolv.conf
 
 setTimeZone
