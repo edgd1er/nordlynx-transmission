@@ -7,12 +7,15 @@ SOCK_PORT=2080 # proxy socks
 HTTP_PORT=2888 # proxy http
 HTTP_PORT=28$(grep -oP '(?<=\- "28)[^:]+' ${CPSE})
 SOCK_PORT=20$(grep -oP '(?<=\- "20)[^:]+' ${CPSE})
+CONFIG_PATH=$(grep -oP '(?<= \- ).+(?=:/config)' ${CPSE})
 SERVICE=transmission
 TRANS_PORT=9091
 #Common
 FAILED=0
 INTERVAL=4
 BUILD=1
+TINYLOG=${CONFIG_PATH%/}/log/tinyproxy.log
+DANTELOG=${CONFIG_PATH%/}/log/dante.log
 
 #Functions
 buildAndWait() {
@@ -26,7 +29,7 @@ buildAndWait() {
   while [ 0 -eq $(echo $logs | grep -c "exited: start_vpn (exit status 0; expected") ]; do
     logs="$(docker compose -f ${CPSE} logs)"
     sleep ${INTERVAL}
-    ((n+=1))
+    ((n += 1))
     echo "loop: ${n}: $(docker compose -f ${CPSE} logs | tail -1)"
     [[ ${n} -eq 15 ]] && break || true
   done
@@ -90,7 +93,7 @@ testProxies() {
   return ${FAILED}
 }
 
-getInterfacesInfo(){
+getInterfacesInfo() {
   docker compose exec ${SERVICE} bash -c "ip -j a |jq  '.[]|select(.ifname|test(\"wg0|tun|nordlynx\"))|.ifname'"
   itf=$(docker compose -f ${CPSE} exec ${SERVICE} ip -j a)
   echo eth0:$(echo $itf | jq -r '.[] |select(.ifname=="eth0")| .addr_info[].local')
@@ -100,19 +103,57 @@ getInterfacesInfo(){
   docker compose -f ${CPSE} exec ${SERVICE} bash -c 'echo "wg conf: $(wg showconf wg0 2>/dev/null)"'
 }
 
-getAliasesOutput(){
+getAliasesOutput() {
   docker compose -f ${CPSE} exec ${SERVICE} bash -c 'while read -r line; do echo $line;eval $line;done <<<$(grep ^alias ~/.bashrc | cut -f 2 -d"'"'"'")'
 }
 
-getTransWebPAge(){
+getTransWebPage() {
   curl http://localhost:${TRANS_PORT}/transmission/web/
 }
 
-#Main
-[[ -e /.dockerenv ]] && PROXY_HOST=
+checkOuput() {
+  TINY_OUT=$(grep -oP '(?<=\- TINYLOGOUTPUT=)[^ ]+' ${CPSE})
+  DANTE_OUT=$(grep -oP '(?<=\- DANTE_LOGOUTPUT=)[^ ]+' ${CPSE})
+  DANTE_RES=$(docker compose -f ${CPSE} exec ${SERVICE} grep -oP "(?<=^logoutput: ).+" /etc/dante.conf)
+  TINY_RES=$(docker compose -f ${CPSE} exec ${SERVICE} grep -oP  "(?<=^LogFile )(?:\")[^\"]+" /etc/tinyproxy/tinyproxy.conf | tr -d '"')
+  echo -e "\nOut tiny: ${TINY_OUT}, dante: ${DANTE_OUT}"
+  echo "Res tiny: ${TINY_RES}, dante: ${DANTE_RES}"
+  echo "Logs tiny: ${TINYLOG}, dante: ${DANTELOG}"
+  #dantelog check
+  echo "Logs output checks:"
+  if [[ ${DANTE_OUT} =~ file ]]; then
+    if [[ ! -f ${DANTELOG} ]]; then
+      echo "ERROR, $DANTELOG not found when $DANTE_OUT == file. config found: ${DANTE_RES}"
+    else
+      echo "OK, $DANTELOG found as expected."
+    fi
+  else
+    if [[ -f ${DANTELOG} ]]; then
+      echo "ERROR, $DANTELOG found when $DANTE_OUT == stdout. config found: ${DANTE_RES}"
+    else
+      echo "OK, $DANTELOG not found as expected."
+    fi
+  fi
+  #tinyproxylog check
+  if [[ ${TINY_OUT} =~ file ]]; then
+    if [[ ! -f ${TINYLOG} ]]; then
+      echo "ERROR, $TINYLOG not found when $TINY_OUT == file. config found: ${TINY_RES}"
+    else
+      echo "OK, $TINYLOG found as expected."
+    fi
+  else
+    if [[ -f ${TINYLOG} ]]; then
+      echo "ERROR, $TINYLOG found when $TINY_OUT == stdout. config found: ${TINY_RES}"
+    else
+      echo "OK, $TINYLOG not found as expected."
+    fi
+  fi
 
-#Check ports
+}
+
 #Main
+[[ -f ${CONFIG_PATH}/log/dante.log ]] && rm -f ${CONFIG_PATH}/log/dante.log || true
+[[ -f ${CONFIG_PATH}/log/tinyproxy.log ]] && rm -f ${CONFIG_PATH}/log/tinyproxy.log || true
 [[ -e /.dockerenv ]] && PROXY_HOST=
 
 #Check ports
@@ -123,19 +164,16 @@ myIp=$(curl -4m5 -sq https://ifconfig.me/ip)
 
 if [[ "localhost" == "${PROXY_HOST}" ]] && [[ 1 -eq ${BUILD} ]]; then
   buildAndWait
-  echo "***************************************************"
-  echo "Testing container"
-  echo "***************************************************"
-  # check returned IP through http and socks proxy
-  testProxies
-  getInterfacesInfo
-  [[ 1 -eq ${BUILD} ]] && docker compose down
-else
-  echo "***************************************************"
-  echo "Testing container"
-  echo "***************************************************"
-  # check returned IP through http and socks proxy
-  testProxies
-  getInterfacesInfo
 fi
-
+echo "***************************************************"
+echo "Testing container"
+echo "***************************************************"
+# check returned IP through http and socks proxy
+testProxies
+getInterfacesInfo
+getTransWebPage
+getAliasesOutput
+checkOuput
+if [[ "localhost" == "${PROXY_HOST}" ]] && [[ 1 -eq ${BUILD} ]]; then
+  docker compose down
+fi

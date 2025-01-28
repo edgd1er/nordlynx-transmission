@@ -102,6 +102,10 @@ sysclts:
 * GENERATE_WIREGUARD_CONF=false #write /etc/wireguard/wg0.conf if true. Will download 56 MB, docker 317 MB of additional disk space will be used. 
 * TINYUSER= #optional, enforces authentication over tinyproxy when set with TINYPASS, add authorization with danteuser:${TINYPASS} to socks proxy
 * TINYPASS= #optional, enforces authentication over tinyproxy when set with TINYUSER.
+* DANTE_LOGOUTPUT=file # stdout or file (>/config/log/dante.log)
+* TINYLOGOUTPUT=file # stdout or file (>/config/log/tinyproxy.log)
+* LOG_TO_STDOUT= (true/false) # write transmission logs to stdout or transmission.log 
+
 
 see [haugene's poject](https://github.com/haugene/docker-transmission-openvpn) for transsmission's variables.
 

@@ -124,11 +124,13 @@ RUN echo "cpu: ${TARGETPLATFORM}" \
     ; if [[ -z ${debfile[*]} ]]; then echo "deb package not found: transmission_${TBT_VERSION}*_${ARCH}.deb, error" ; else \
     dpkg -c "${debfile[@]}" \
     && dpkg -i "${debfile[@]}" \
+    && mv /usr/local/share/transmission/public_html /usr/local/share/transmission/public_html_original \
+    && mkdir -p /usr/local/share/transmission/public_html \
     && ln -s /usr/local/share/transmission/public_html/images /opt/transmission-ui/transmission-web-control/ \
     && ln -s /usr/local/share/transmission/public_html/transmission-app.js /opt/transmission-ui/transmission-web-control/transmission-app.js \
     && ln -s /usr/local/share/transmission/public_html/index.html /opt/transmission-ui/transmission-web-control/index.original.html \
-    ; fi ;fi \
-    && echo "alias checkip='curl -sm 10 \"https://zx2c4.com/ip\";echo'" | tee -a ~/.bashrc \
+    ; fi ;fi ; \
+    echo "alias checkip='curl -sm 10 \"https://zx2c4.com/ip\";echo'" | tee -a ~/.bashrc \
     && echo "alias checkhttp='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"\$(head -1 \${TCF}):\$(tail -1 \${TCF})@\" || TCREDS=\"\";curl -4 -sm 10 -x http://\${TCREDS}\${HOSTNAME}:\${WEBPROXY_PORT:-8888} \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
     && echo "alias checksocks='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"\$(head -1 \${TCF}):\$(tail -1 \${TCF})@\" || TCREDS=\"\";curl -4 -sm 10 -x socks5h://\${TCREDS}\${HOSTNAME}:1080 \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
     && echo "alias checkvpn='nordvpn status | grep -oP \"(?<=Status: ).*\"'" | tee -a ~/.bashrc \
@@ -200,7 +202,9 @@ ENV GLOBAL_APPLY_PERMISSIONS=true \
     PRE_DOWN='' \
     POST_DOWN='' \
     TINYUSER='' \
-    TINYPASS=''
+    TINYPASS='' \
+    DANTE_LOGOUTPUT='stdout' \
+    TINYLOGOUTPUT='stdout'
 
 # Start supervisord as init system
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
