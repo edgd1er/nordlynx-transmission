@@ -144,8 +144,20 @@ socks pass {
 }
 " >>${DANTE_CONF}
   [[ -n ${DANTE_LOGLEVEL} ]] && sed -i "s/log: DANTE_LOGLEVEL/log: ${DANTE_LOGLEVEL}/" ${DANTE_CONF}
-  [[ -n ${DANTE_ERRORLOG} ]] && sed -i "s#errorlog: /dev/null#errorlog: ${DANTE_ERRORLOG}#" ${DANTE_CONF}
   [[ 0 -ne ${DANTE_DEBUG} ]] && cat ${DANTE_CONF}
+  sed -i "s/log: error/log: ${DANTE_LOGLEVEL}/g" ${DANTE_CONF}
+
+  #define logoutput
+  if [[ "file" == ${DANTE_LOGOUTPUT} ]]; then
+    LOGDIR=/config/log
+    mkdir -p ${LOGDIR}
+    echo "Setting dante log to ${LOGDIR}/dante.log"
+    sed -i -r "s%^#?logoutput: DANTE_LOGOUTPUT%logoutput: ${LOGDIR}/dante.log%" ${DANTE_CONF}
+  else
+    echo "Settting dante log to stdout"
+    sed -i -r "s%^#?logoutput: DANTE_LOGOUTPUT%logoutput: stdout%" ${DANTE_CONF}
+  fi
+
   log "INFO: DANTE: check configuration socks proxy"
   danted -Vf ${DANTE_CONF}
 }
@@ -153,7 +165,8 @@ socks pass {
 generateTinyproxyConf() {
   SOURCE_CONF=/etc/tinyproxy.conf.tmpl
   CONF=/etc/tinyproxy/tinyproxy.conf
-  mkdir -p $(dirname ${CONF})
+  LOGDIR=/config/log
+  mkdir -p $(dirname ${CONF}) -p ${LOGDIR}
   TINYPORT=${WEBPROXY_PORT:-8888}
   #Critical (least verbose), Error, Warning, Notice, Connect (to log connections without Info's noise), Info
   TINY_LOGLEVEL=${TINY_LOGLEVEL:-Error}
@@ -168,6 +181,13 @@ generateTinyproxyConf() {
   sed -i "s/TINY_LOGLEVEL/${TINY_LOGLEVEL}/" ${CONF}
   sed -i "s/#Listen .*/Listen ${INT_IP}/" ${CONF}
   sed -i "s!#Allow INT_CIDR!Allow ${INT_CIDR}!" ${CONF}
+
+  if [[ "file" == "${TINYLOGOUTPUT}" ]]; then
+    [[ ! -d ${LOGDIR} ]] &&mkdir -p ${LOGDIR} || true
+    touch ${LOGDIR}/tinyproxy.log
+    chown tinyproxy:tinyproxy ${LOGDIR}/tinyproxy.log
+    sed -i -r "s%^#?LogFile.*%LogFile \"${LOGDIR}/tinyproxy.log\"%" ${CONF}
+  fi
 
   #basic Auth
   TCREDS_SECRET_FILE=/run/secrets/TINY_CREDS

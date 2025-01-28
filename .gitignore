@@ -1,5 +1,5 @@
 .idea/**
 *_creds
-/docker-compose.yml
-/your_config_path/
-/your_storage_path/
+compose.yml
+your_config_path/
+your_storage_path/
