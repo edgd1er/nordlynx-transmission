@@ -179,4 +179,25 @@ secrets:
 
 ```
 
+### Troubleshooting
 
+Enter the container: `docker compose exec transmission bash`
+
+Several aliases are available:
+* checkhttp: get external ip through http proxy and vpn. should be the same as `checkip`
+* checksocks: get external ip through socks proxy and vpn. should be the same as `checkip`
+* checkip: get external ip. should be the same as `getcheck`
+* checkvpn: print protection status as seen by nordvpn's client.
+* getcheck: get information as ip from nordvpn client.
+* getdante: print socks proxy configuration
+* gettiny: print http proxy configuration
+* getversion: install nordvpn specific version, allow downgrades eg 3.17.0, 3.17.1, ...
+
+From times to times, nordvpn app is bugged, installing another version (downgrade) may be a workaround.
+
+
+Sometimes docker won't start the container as the file resolv.conf is locked cannot be modified anymore.
+This problem occurs since nordvpn'client 3.19.
+
+to restart the container, remove i attribute on host container's resolv.conf
+```chattr -i /var/lib/docker/containers/<container-hash>/resolv.conf```
