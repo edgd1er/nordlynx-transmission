@@ -43,7 +43,7 @@ buildnoclient: ## build image without nordvpn client
 	@echo "build image without nordvpn client"
 	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg NORDVPN_INSTALL=0 --build-arg TWCV="${TWCV}" --build-arg TICV="${TICV}" -f ./Dockerfile -t edgd1er/nordguard-transmission  .
 
-ver:	## check versions
+check:	## check versions
 	@lversion=$$( grep -oP "(?<=changelog\): )[^ ]+" README.md ) ;\
 	rversion=$$(curl -qLs "${NORDVPN_PACKAGE}" | grep -oP "(?<=Version: )(.*)" | sort -t. -n -k1,1 -k2,2 -k3,3 | tail -1); \
 	echo "local  version: $${lversion}" ;\
