@@ -148,7 +148,6 @@ checkOuput() {
       echo "OK, $TINYLOG not found as expected."
     fi
   fi
-
 }
 
 #Main
