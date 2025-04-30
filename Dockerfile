@@ -33,7 +33,7 @@ ADD transmission_web_control_1.6.33.tar.xz /opt/transmission-ui/
 FROM debian:bookworm-slim AS debian-base
 
 ARG aptcacher=''
-ARG VERSION=3.20.1
+ARG VERSION=3.20.2
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 

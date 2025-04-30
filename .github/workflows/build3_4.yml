@@ -9,31 +9,38 @@ env:
   tbt_version3: "3.00"
   tbt_version4: "4.0.6"
   tbt_versiond: "4.1.0"
-  nversion: "3.20.1"
   twcv: "1.6.33"
   ticv: "1.8.0"
 
 jobs:
   getNordvpnVersions:
     runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      VERSION: ${{ steps.step2.outputs.VERSION }}
     steps:
       - name: checkout code
         uses: actions/checkout@v4
+        id: step1
       - name: get local nordvpn client version
+        id: step2
         run: |
           grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' '
-          echo "VERSION="$(grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' ') >> $GITHUB_ENV
+          echo "VERSION=$(grep -oP '(?<=changelog\): )[^ ]+' README.md | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          echo "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
   show_vars:
     runs-on: ubuntu-latest
+    needs: getNordvpnVersions
     outputs:
       tbt_version3: ${{ env.tbt_version3 }}
       tbt_version4: ${{ env.tbt_version4 }}
-      nversion: ${{ env.nversion }}
+      nversion: ${{ needs.getNordvpnVersions.outputs.VERSION }}
       twcv: ${{ env.twcv }}
       ticv: ${{ env.ticv }}
     steps:
       - name: "show vars"
-        run: echo "TBT_VERSION3=${tbt_version3},TBT_VERSION4=${tbt_version4}, VERSION=${nversion}, TWCV=${twcv}, TICV=${ticv}"
+        run: echo "TBT_VERSION3=${tbt_version3},TBT_VERSION4=${tbt_version4}, VERSION=${{ needs.getNordvpnVersions.outputs.VERSION }}, TWCV=${twcv}, TICV=${ticv}"
   build-v3-images:
     uses: ./.github/workflows/build-template.yml
     with:
