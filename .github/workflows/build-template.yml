@@ -8,7 +8,7 @@ on:
         type: string
       version:
         required: false
-        default: "3.17.0"
+        default: "3.20.2"
         type: string
       tbt_version:
         required: true
