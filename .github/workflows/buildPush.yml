@@ -14,7 +14,7 @@ env:
   IMAGE: nordlynx-transmission
   TAG: ${{ github.ref_name }}
   REVISION: ${{ github.ref_name }}
-  USER: edgd1er
+  USER: ${{ secrets.DOCKER_USER }}
 
 jobs:
   build:
