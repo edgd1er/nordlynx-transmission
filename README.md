@@ -159,6 +159,9 @@ services:
       - NORDVPN_PASS=<pass> #Not required if using secrets
       - TRANSMISSION_RPC_USERNAME=<username> # not required if using secrets
       - TRANSMISSION_RPC_PASSWORD=<password> # not required if using secrets
+      #- TRANSMISSION_RPC_WHITELIST_ENABLED=true # optional, enables IP whitelist for RPC access
+      #- TRANSMISSION_RPC_WHITELIST=172.16.0.* # required if whitelist enabled: specify allowed IP ranges for RPC access
+      #- TRANSMISSION_UMASK=0000 # optional, set file permissions mask
       #- TINYUSER: optional, enforces authentication over tinyproxy when set with TINYPASS. set dante username also.
       #- TINYPASS: optional, enforces authentication over tinyproxy when set with TINYUSER. set dante password also.
     secrets:

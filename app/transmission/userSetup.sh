@@ -55,7 +55,7 @@ setNewUSer() {
       "${TRANSMISSION_WATCH_DIR}"
 
     echo "Setting permissions for download and incomplete directories"
-    if [ -z "$TRANSMISSION_UMASK" ]; then
+    if [ -z "${TRANSMISSION_UMASK:-}" ]; then
       # fetch from settings.json if not defined in environment
       # because updateSettings.py is called after this script is run
       TRANSMISSION_UMASK=$(jq .umask ${TRANSMISSION_HOME}/settings.json | tr -d \")
