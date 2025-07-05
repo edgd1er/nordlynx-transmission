@@ -183,7 +183,7 @@ generateTinyproxyConf() {
   sed -i "s!#Allow INT_CIDR!Allow ${INT_CIDR}!" ${CONF}
 
   if [[ "file" == "${TINYLOGOUTPUT}" ]]; then
-    [[ ! -d ${LOGDIR} ]] &&mkdir -p ${LOGDIR} || true
+    [[ ! -d ${LOGDIR} ]] && mkdir -p ${LOGDIR} || true
     touch ${LOGDIR}/tinyproxy.log
     chown tinyproxy:tinyproxy ${LOGDIR}/tinyproxy.log
     sed -i -r "s%^#?LogFile.*%LogFile \"${LOGDIR}/tinyproxy.log\"%" ${CONF}
@@ -192,8 +192,8 @@ generateTinyproxyConf() {
   #basic Auth
   TCREDS_SECRET_FILE=/run/secrets/TINY_CREDS
   if [[ -f ${TCREDS_SECRET_FILE} ]]; then
-    TINYUSER=$(head -1 ${TCREDS_SECRET_FILE})
-    TINYPASS=$(tail -1 ${TCREDS_SECRET_FILE})
+    TINYUSER=$(sed -n '1p' ${TCREDS_SECRET_FILE})
+    TINYPASS=$(sed -n '2p' ${TCREDS_SECRET_FILE})
   fi
   if [[ -n ${TINYUSER:-''} ]] && [[ -n ${TINYPASS:-''} ]]; then
     sed -i -r "s/#?BasicAuth user password/BasicAuth ${TINYUSER} ${TINYPASS}/" ${CONF}
@@ -271,6 +271,57 @@ extractLynxConf() {
   cat /etc/wireguard/wg0.conf
 }
 
+setup_nordvpn() {
+
+  log "INFO: NORDVPN: starting nordvpn daemon"
+  action=start
+  isRunning=$(supervisorctl status nordvpnd | grep -c RUNNING 2>/dev/null) || true
+  if [[ ${isRunning} -ne 0  ]]; then
+    action=restart
+  else
+    #if not started, remove socket
+    [[ -e ${RDIR}/nordvpnd.sock ]] && rm -f ${RDIR}/nordvpnd.sock
+  fi
+  #start nordvpn daemon
+  while [ ! -S ${RDIR}/nordvpnd.sock ]; do
+    log "WARNING: NORDVPN: restart nordvpn daemon as no socket was found"
+    supervisorctl ${action} nordvpnd
+    sleep 10
+  done
+
+  nordvpn set tray off
+  nordvpn set notify off
+  nordvpn set analytics ${ANALYTICS}
+  nordvpn set technology ${TECHNOLOGY,,}
+  [[ ${TECHNOLOGY,,} = 'openvpn' ]] && nordvpn set protocol ${PROTOCOL:-'udp'}
+  nordvpn set cybersec ${CYBER_SEC:-'off'}
+  nordvpn set killswitch ${KILLERSWITCH:-'on'}
+  #obfuscate only available to openvpn(tcp or udp)
+  if [[ ${OBFUSCATE,,} == "on" ]] && [[ ${TECHNOLOGY,,} = 'openvpn' ]]; then
+    nordvpn set obfuscate ${OBFUSCATE:-'off'}
+  fi
+  [[ -n ${DNS:-''} ]] && nordvpn set dns ${DNS//[;,]/ } || true
+  if [[ -z ${DOCKER_NET:-''} ]]; then
+    DOCKER_NET="$(getEthCidr)"
+  fi
+  log "INFO: NORDVPN: whitelisting docker's net: ${DOCKER_NET}"
+  nordvpn whitelist add subnet ${DOCKER_NET} || true
+  if [[ -n ${LOCAL_NETWORK:-''} ]]; then
+    for net in ${LOCAL_NETWORK//[;,]/ }; do
+      nordvpn whitelist add subnet ${net} || true
+      #do not readd route if already present
+      if [[ -z $(ip route show match ${net} | grep ${net}) ]]; then
+        log "INFO: NORDVPN: adding route to local network ${net} via ${GW} dev ${INT}"
+        /sbin/ip route add "${net}" via "${GW}" dev "${INT}"
+      fi
+    done
+  else
+    log "INFO: NORDVPN: no route to host's local network"
+  fi
+  [[ -n ${PORTS:-''} ]] && for port in ${PORTS//[;,]/ }; do nordvpn whitelist add port ${port} || true; done
+  [[ ${DEBUG} ]] && nordvpn -version && nordvpn settings
+}
+
 startNordVpn() {
   #Use secrets if present
   #hide credentials even in debug
@@ -300,18 +351,6 @@ startNordVpn() {
   else
     logincmd="login --username ${NORDVPN_LOGIN} --password ${NORDVPN_PASS}"
   fi
-
-  log "INFO: NORDVPN: starting nordvpn daemon"
-  action=start
-  isRunning=$(supervisorctl status nordvpnd | grep -c RUNNING) || true
-  [[ 0 -le ${isRunning} ]] && action=restart
-  [[ -e ${RDIR}/nordvpnd.sock ]] && rm -f ${RDIR}/nordvpnd.sock
-  #start nordvpn daemon
-  while [ ! -S ${RDIR}/nordvpnd.sock ]; do
-    log "WARNING: NORDVPN: restart nordvpn daemon as no socket was found"
-    supervisorctl ${action} nordvpnd
-    sleep 10
-  done
 
   # login: already logged in return 1
   res="$(nordvpn ${logincmd})" || true
@@ -368,7 +407,7 @@ country_filter() {
   local country=(${*//[;,]/ })
   if [[ ${#country[@]} -ge 1 ]]; then
     country=${country[@]//_/ }
-    local country_id=$(echo ${json_countries} | jq --raw-output ".[] | select( (.name|test(\"^${country}$\";\"i\")) or (.code|test(\"^${country}$\";\"i\")) ) | .id" | head -n 1)
+    local country_id=$(echo ${json_countries} | jq --raw-output ".[] | select( (.name|test(\"^${country}$\";\"i\")) or (.code|test(\"^${country}$\";\"i\")) ) | .id" | sed -n '1p')
   fi
   if [[ -n ${country_id} ]]; then
     #log "Searching for country : ${country} (${country_id})"
@@ -406,7 +445,7 @@ group_filter() {
     identifier=$(echo $json_groups | jq --raw-output ".[] |
                           select( ( .identifier|test(\"${category}\";\"i\")) or
                                   ( .title| test(\"${category}\";\"i\")) ) |
-                          .identifier" | head -n 1)
+                          .identifier" | sed -n '1p')
   fi
   if [[ -n ${identifier} ]]; then
     #log "found group: ${category} (${identifier})"
@@ -423,7 +462,7 @@ technologies_filter() {
     identifier=$(echo ${json_technologies} | jq --raw-output ".[] |
                           select( ( .name|test(\"${technology}\";\"i\")) or
                                   ( .identifier| test(\"${technology}\";\"i\")) ) |
-                          .id" | head -n 1)
+                          .id" | sed -n '1p')
   fi
   if [[ -n ${identifier} ]]; then
     #log "found technology: ${technology} (${identifier})"
@@ -546,7 +585,7 @@ setTimeZone() {
 }
 
 checkLatest() {
-  CANDIDATE=$(curl --retry 3 -LSs "https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/" | grep -oP "NordVPN \K[0-9]\.[0-9.-]{1,4}" | head -1)
+  CANDIDATE=$(curl --retry 3 -LSs "https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/" | grep -oP "NordVPN \K[0-9]\.[0-9.-]{1,4}" | sed -n '1p')
   VERSION=$(dpkg-query --showformat='${Version}' --show nordvpn) || true
   [[ -z ${VERSION} ]] && VERSION=$(apt-cache show nordvpn | grep -oP "(?<=Version: ).+") || true
   if [[ ${VERSION} =~ ${CANDIDATE} ]]; then
@@ -602,9 +641,9 @@ createUserForAuthifNeeded() {
     TINYPASS=${arr[1]::-1}
     tinyid=$(id -u ${TINYUSER}) || true
     if [[ -z ${tinyid} ]]; then
-      adduser --gecos "" --no-create-home --disabled-password  --shell /usr/sbin/nologin --ingroup tinyproxy ${TINYUSER}
+      adduser --gecos "" --no-create-home --disabled-password --shell /usr/sbin/nologin --ingroup tinyproxy ${TINYUSER}
     fi
-    echo "${TINYUSER}:${TINYPASS}" |chpasswd
+    echo "${TINYUSER}:${TINYPASS}" | chpasswd
   fi
 
 }
@@ -612,8 +651,8 @@ createUserForAuthifNeeded() {
 getTinyCred() {
   TCREDS_SECRET_FILE=/run/secrets/TINY_CREDS
   if [[ -f ${TCREDS_SECRET_FILE} ]]; then
-    TINYUSER=$(head -1 ${TCREDS_SECRET_FILE})
-    TINYPASS=$(tail -1 ${TCREDS_SECRET_FILE})
+    TINYUSER=$(sed -n '1p' ${TCREDS_SECRET_FILE})
+    TINYPASS=$(sed -n '2p' ${TCREDS_SECRET_FILE})
   fi
   if [[ -n ${TINYUSER:-''} ]] && [[ -n ${TINYPASS:-''} ]]; then
     TINYCRED="${TINYUSER}:${TINYPASS}@"
