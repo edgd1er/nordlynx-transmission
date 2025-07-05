@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.3
-FROM --platform=$BUILDPLATFORM alpine:3.20 AS TransmissionUIs
+FROM --platform=$BUILDPLATFORM alpine:3.21 AS TransmissionUIs
 ARG TWCV="1.6.33"
 ARG TICV="1.8.0"
 
@@ -33,7 +33,7 @@ ADD transmission_web_control_1.6.33.tar.xz /opt/transmission-ui/
 FROM debian:bookworm-slim AS debian-base
 
 ARG aptcacher=''
-ARG VERSION=3.20.3
+ARG VERSION=4.0.0
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 
@@ -154,7 +154,7 @@ ENV DANTE_DEBUG=0
 ENV DANTE_LOGLEVEL=error
 ENV TINY_LOGLEVEL=error
 ENV GENERATE_WIREGUARD_CONF=false
-ENV ANALYTICS=1
+ENV ANALYTICS=off
 ENV KILLERSWITCH=on
 ENV CYBER_SEC=off
 ENV TECHNOLOGY=nordlynx

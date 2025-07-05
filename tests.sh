@@ -51,8 +51,8 @@ areProxiesPortOpened() {
 
 testProxies() {
   if [[ -f ./tiny_creds ]]; then
-    usertiny=$(head -1 ./tiny_creds)
-    passtiny=$(tail -1 ./tiny_creds)
+    usertiny=$(sed -n '1p' ./tiny_creds)
+    passtiny=$(sed -n '2p' ./tiny_creds)
     echo "Getting tinyCreds from file: ${usertiny}:${passtiny}"
     TCREDS="${usertiny}:${passtiny}@"
     DCREDS=${TCREDS}
@@ -108,14 +108,18 @@ getAliasesOutput() {
 }
 
 getTransWebPage() {
-  curl http://localhost:${TRANS_PORT}/transmission/web/
+  transcreds=""
+  if [[ -e rpc_creds ]]; then
+    transcreds="$(sed -n '1p' ./rpc_creds):$(sed -n '2p' ./rpc_creds)@"
+  fi
+  curl http://${transcreds}localhost:${TRANS_PORT}/transmission/web/
 }
 
 checkOuput() {
   TINY_OUT=$(grep -oP '(?<=\- TINYLOGOUTPUT=)[^ ]+' ${CPSE})
   DANTE_OUT=$(grep -oP '(?<=\- DANTE_LOGOUTPUT=)[^ ]+' ${CPSE})
   DANTE_RES=$(docker compose -f ${CPSE} exec ${SERVICE} grep -oP "(?<=^logoutput: ).+" /etc/dante.conf)
-  TINY_RES=$(docker compose -f ${CPSE} exec ${SERVICE} grep -oP  "(?<=^LogFile )(?:\")[^\"]+" /etc/tinyproxy/tinyproxy.conf | tr -d '"')
+  TINY_RES=$(docker compose -f ${CPSE} exec ${SERVICE} grep -oP "(?<=^LogFile )(?:\")[^\"]+" /etc/tinyproxy/tinyproxy.conf | tr -d '"')
   echo -e "\nOut tiny: ${TINY_OUT}, dante: ${DANTE_OUT}"
   echo "Res tiny: ${TINY_RES}, dante: ${DANTE_RES}"
   echo "Logs tiny: ${TINYLOG}, dante: ${DANTELOG}"
