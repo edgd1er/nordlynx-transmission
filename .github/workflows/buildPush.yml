@@ -23,7 +23,7 @@ jobs:
       matrix: ${{ toJson(steps.meta.outputs.json) }}
     steps:
       - name: checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: get local nordvpn client version
         run: |
             echo "VERSION="$(grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' ') >> $GITHUB_ENV

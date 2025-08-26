@@ -1,5 +1,8 @@
 # syntax=docker/dockerfile:1.3
-FROM --platform=$BUILDPLATFORM alpine:3.21 AS TransmissionUIs
+#ARG BASE_IMAGE=debian:bookworm-slim
+ARG BASE_IMAGE=ubuntu:24.04
+
+FROM --platform=$BUILDPLATFORM alpine:3.22 AS TransmissionUIs
 ARG TWCV="1.6.33"
 ARG TICV="1.8.0"
 
@@ -30,12 +33,13 @@ RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
 ADD transmission_web_control_1.6.33.tar.xz /opt/transmission-ui/
 
 #FROM debian:bullseye-slim AS debian-base
-FROM debian:bookworm-slim AS debian-base
+FROM $BASE_IMAGE AS os-base
 
 ARG aptcacher=''
 ARG VERSION=4.0.0
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
+ARG BASE_IMAGE
 
 LABEL maintainer="edgd1er <edgd1er@htomail.com>" \
       org.label-schema.build-date=$BUILD_DATE \
@@ -77,22 +81,27 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && apt-get install -qqy --no-install-recommends /tmp/nordrepo.deb && apt-get update \
     && apt-get install -qqy --no-install-recommends -y nordvpn="${VERSION}" \
     #&& apt-get remove -y wget nordvpn-release \
-    && mkdir -p /run/nordvpn \
-    #chmod a+x /app/*.sh  \
+    && mkdir -p /run/nordvpn
+    #chmod a+x /app/*.sh
+
+RUN echo "os: ${BASE_IMAGE}, version: wg: ${NORDVPNCLIENT_INSTALLED}, vpn: ${NORDVPN_VERSION}" \
+    && if [[ ${BASE_IMAGE} =~ ubuntu ]];then export NUID=1001; export NGID=100; fi \
     && addgroup --system vpn && useradd -lNms /bin/bash -u "${NUID:-1000}" -G nordvpn,vpn nordclient \
     && apt-get clean all && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     #transmission user
-    && groupmod -g 1000 users && useradd -u 911 -U -d /config -s /bin/false abc && usermod -G users abc \
+    && groupmod -g ${NGID:-1000} users \
+    && useradd -u 911 -U -d /config -s /bin/false abc && usermod -G users abc \
     && if [[ -n ${aptcacher} ]]; then rm /etc/apt/apt.conf.d/01proxy; fi \
     # patch wg-quick script to remove the need for running in privilegied mode
     && sed -i "s:sysctl -q net.ipv4.conf.all.src_valid_mark=1:echo skipping setting net.ipv4.conf.all.src_valid_mark:" /usr/bin/wg-quick
 
-FROM debian-base AS new
+FROM os-base AS new
 
 ARG aptcacher=''
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TBT_VERSION=4.0.6
 ARG TARGETPLATFORM
+ARG BASE_IMAGE
 
 ENV TZ=${TZ:-Etc/UTC}
 ENV NORDVPNCLIENT_INSTALLED=${NORDVPNCLIENT_INSTALLED}
@@ -106,7 +115,7 @@ COPY out/transmission_${TBT_VERSION}*.deb /tmp/
 SHELL ["/bin/bash", "-o", "pipefail", "-xcu"]
 
 #hadolint ignore=DL3008,SC2046,SC2086
-RUN echo "cpu: ${TARGETPLATFORM}" \
+RUN echo "cpu: ${TARGETPLATFORM}, os: ${BASE_IMAGE}, version: tbt: ${TBT_VERSION}, vpn: ${NORDVPN_VERSION}" \
     ; if [[ "${TBT_VERSION}" =~ ^3 ]]; then echo "Installing transmission from repository" \
     && apt-get update && apt-get install -y --no-install-recommends transmission-daemon transmission-cli \
     && ln -s /usr/share/transmission/web/style /opt/transmission-ui/transmission-web-control \
