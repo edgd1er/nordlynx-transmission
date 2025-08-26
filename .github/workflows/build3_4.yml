@@ -20,7 +20,7 @@ jobs:
       VERSION: ${{ steps.step2.outputs.VERSION }}
     steps:
       - name: checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         id: step1
       - name: get local nordvpn client version
         id: step2
@@ -41,6 +41,7 @@ jobs:
     steps:
       - name: "show vars"
         run: echo "TBT_VERSION3=${tbt_version3},TBT_VERSION4=${tbt_version4}, VERSION=${{ needs.getNordvpnVersions.outputs.VERSION }}, TWCV=${twcv}, TICV=${ticv}"
+
   build-v3-images:
     uses: ./.github/workflows/build-template.yml
     with:
@@ -60,6 +61,7 @@ jobs:
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
+      base_image: 'debian:bookworm-slim'
       tbt_version: ${{ needs.show_vars.outputs.tbt_version4 }}
       tag: "edgd1er/nordlynx-transmission:v4,edgd1er/nordlynx-transmission:latest"
       version: ${{ needs.show_vars.outputs.nversion }}
@@ -70,12 +72,45 @@ jobs:
       - getNordvpnVersions
       - show_vars
 
+  build-v4-images-ubuntu:
+    uses: ./.github/workflows/build-template.yml
+    with:
+      build-context: '.'
+      base_image: 'ubuntu:24.04'
+      tbt_version: ${{ needs.show_vars.outputs.tbt_version4 }}
+      tag: "edgd1er/nordlynx-transmission:v4-ubuntu,edgd1er/nordlynx-transmission:latest-ubuntu"
+      version: ${{ needs.show_vars.outputs.nversion }}
+      twcv: ${{ needs.show_vars.outputs.twcv }}
+      ticv: ${{ needs.show_vars.outputs.ticv }}
+    secrets: inherit
+    needs:
+      - getNordvpnVersions
+      - show_vars
+
+
+
   build-v4dev-images:
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
       tbt_version: "${{ needs.show_vars.outputs.tbt_versiond }}"
       tag: "edgd1er/nordlynx-transmission:dev"
+      ptf: "linux/amd64,linux/arm64,linux/arm/v7"
+      version: ${{ needs.show_vars.outputs.nversion }}
+      twcv: ${{ needs.show_vars.outputs.twcv }}
+      ticv: ${{ needs.show_vars.outputs.ticv }}
+    secrets: inherit
+    needs:
+      - getNordvpnVersions
+      - show_vars
+
+  build-v4dev-images-ubuntu:
+    uses: ./.github/workflows/build-template.yml
+    with:
+      build-context: '.'
+      base_image: 'ubuntu:24.04'
+      tbt_version: "${{ needs.show_vars.outputs.tbt_versiond }}"
+      tag: "edgd1er/nordlynx-transmission:dev-ubuntux"
       ptf: "linux/amd64,linux/arm64,linux/arm/v7"
       version: ${{ needs.show_vars.outputs.nversion }}
       twcv: ${{ needs.show_vars.outputs.twcv }}

@@ -3,12 +3,16 @@ name: Reusable workflow for building multi-arch images
 on:
   workflow_call:
     inputs:
+      base_image:
+        required: false
+        default: "debian:bookworm-slim"
+        type: string
       build-context:
         required: true
         type: string
       version:
         required: false
-        default: "3.20.2"
+        default: "4.0.0"
         type: string
       tbt_version:
         required: true
@@ -37,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -70,6 +74,7 @@ jobs:
             TWCV=${{ inputs.twcv }}
             TICV=${{ inputs.ticv }}
             TZ=America/Chicago
+            BASE_IMAGE=${{ inputs.base_image }}
           platforms: ${{ inputs.ptf }}
           provenance: false
           push: ${{ env.PUSHFLAG }}
