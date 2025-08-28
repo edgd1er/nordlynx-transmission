@@ -3,10 +3,32 @@ name: Reusable workflow for building multi-arch images
 on:
   workflow_call:
     inputs:
+      image:
+        type: string
+        default: nordlynx-transmission
+        description: "image name"
+      tag:
+        type: string
+        default: latest
+        description: "tag"
+      push:
+        type: string
+        default: 'false'
+        description: "push to registry"
+      ptf:
+        type: string
+        # no dante-server on ubuntu 24.04 for armhf
+        default: "linux/amd64, linux/arm64, linux/arm/v7, linux/arm/v6"
+        description: "platforms linux/xx"
       base_image:
         required: false
-        default: "debian:bookworm-slim"
+        default: "debian:bookworm-slim" # ubuntu:24.04
         type: string
+      wg:
+        type: boolean
+        default: false # true
+        description: "Wireguard client included"
+#-----------------------------
       build-context:
         required: true
         type: string
@@ -17,9 +39,6 @@ on:
       tbt_version:
         required: true
         type: string
-      tag:
-        required: true
-        type: string
       twcv:
         required: false
         default: "1.6.33"
@@ -28,18 +47,36 @@ on:
         required: false
         default: "1.8.0"
         type: string
-      ptf:
-        required: false
-        type: string
-        default: "linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6"
-
-env:
-  PUSHFLAG: ${{ github.ref == 'refs/heads/main' }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: set push value, os
+        run: |
+          if [[ "true" == "${{ inputs.push }}" ]]; then 
+            echo "LOAD=false">> $GITHUB_ENV
+            echo "PTF=${{ inputs.ptf }}">> $GITHUB_ENV
+          else 
+            echo "LOAD=true">> $GITHUB_ENV
+            echo "PTF=linux/amd64">> $GITHUB_ENV
+          fi
+          echo "PUSH=$PUSH" >> $GITHUB_ENV
+
+          IMAGE="${{ inputs.image }}"
+          if [[ "${{ inputs.wg }}" == "true" ]]; then
+            IMAGE="${{ inputs.image }}-wg"
+          fi
+          echo "IMAGE=$IMAGE">> $GITHUB_ENV
+      - name: set tagos ubuntu
+        if: contains(inputs.base_image,'ubuntu')
+        run: |
+          echo "tagos=ubuntu">> $GITHUB_ENV
+      - name: set tagos debian
+        if: contains(inputs.base_image,'debian')
+        run: |
+          echo "tagos=debian">> $GITHUB_ENV
+
       - name: checkout code
         uses: actions/checkout@v5
       - name: Set up QEMU
@@ -60,8 +97,27 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
+
       - name: "show vars"
-        run: echo "TBT_VERSION=${{ inputs.tbt_version }}, VERSION=${{ inputs.version }}, TWCV=${{ inputs.twcv }}, TICV=${{ inputs.ticv }}"
+        run: |
+          echo "TBT_VERSION=${{ inputs.tbt_version }}, VERSION=${{ inputs.version }}, TWCV=${{ inputs.twcv }}, TICV=${{ inputs.ticv }}"
+          echo "IMAGE=${{ env.IMAGE }}, TAG=${{ inputs.tag }}, tagos=${{ env.tagos }}, PUSH=${{ inputs.push }}, LOAD=${{ env.LOAD }}, PTF=${{ env.PTF }}"
+
+      # type=schedule, semver, pep440, match, edge, ref, raw, sha
+      # type=raw,enable=true,priority=200,prefix=,suffix=,value=
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ secrets.DOCKER_USER }}/${{ env.IMAGE }}
+          labels: |
+            org.opencontainers.image.created={{commit_date 'YYYY-MM-DDTHH:mm:ss.SSS[Z]'}}
+          tags: |
+            type=raw,enable=true,priority=200,prefix=,suffix=,value=${{ inputs.tag }}-${{ env.tagos }}        
+            type=raw,enable=true,priority=200,prefix=,suffix=,value=latest-${{ env.tagos }}        
+            type=raw,enable=${{ contains(inputs.base_image,'debian') }},priority=200,prefix=,suffix=,value=latest
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -75,21 +131,20 @@ jobs:
             TICV=${{ inputs.ticv }}
             TZ=America/Chicago
             BASE_IMAGE=${{ inputs.base_image }}
-          platforms: ${{ inputs.ptf }}
+          platforms: ${{ env.ptf }}
           provenance: false
-          push: ${{ env.PUSHFLAG }}
-          #labels: ${{ }}
-          tags: ${{ inputs.tag }}
+          load: ${{ fromJSON(env.LOAD) }}
+          push: ${{ inputs.push == 'true' }}
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: gettag
-        uses: jungwinter/split@v2
-        id: split
-        with:
-            msg: ${{ inputs.tag }}
-            separator: ','
-      - name: set_print
-        id: gettag
+
+      - name: inspect_image_tag
+        id: inspect_img
         run: |
-          echo "split_1:  ${{ steps.split.outputs._1 }}"
-          docker buildx imagetools inspect  ${{ steps.split.outputs._0 }}
+          IFS=',' read -ra TAGS <<< "${{ steps.meta.outputs.tags }}"
+          for tag in "${TAGS[@]}"; do
+            docker buildx imagetools inspect "$tag"
+          done
+        if: ${{ inputs.push == 'true' }}

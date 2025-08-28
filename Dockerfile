@@ -33,6 +33,7 @@ RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
 ADD transmission_web_control_1.6.33.tar.xz /opt/transmission-ui/
 
 #FROM debian:bullseye-slim AS debian-base
+#hadolint ignore=DL3006
 FROM $BASE_IMAGE AS os-base
 
 ARG aptcacher=''
@@ -60,8 +61,8 @@ ENV IPTABLES_LEGACY=N
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #add apt-cacher setting if present:
 WORKDIR /app
-#hadolint ignore=DL3018,DL3008
-RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
+#hadolint ignore=DL3018,DL3008,SC2086
+RUN if [[ -n "${aptcacher}" ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
     # allow to install resolvconf
     echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
@@ -72,7 +73,7 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     # wireguard \
     wireguard-tools \
     #ui start \
-    && if [[ ${NORDVPNCLIENT_INSTALLED} -eq 1 ]]; then \
+    && if [[ 1 -eq ${NORDVPNCLIENT_INSTALLED} ]]; then \
     apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy \
     # nordvpn requirements \
     iproute2 iptables readline-common dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client \
@@ -81,17 +82,16 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
     && apt-get install -qqy --no-install-recommends /tmp/nordrepo.deb && apt-get update \
     && apt-get install -qqy --no-install-recommends -y nordvpn="${VERSION}" \
     #&& apt-get remove -y wget nordvpn-release \
-    && mkdir -p /run/nordvpn
+    && mkdir -p /run/nordvpn \
     #chmod a+x /app/*.sh
-
-RUN echo "os: ${BASE_IMAGE}, version: wg: ${NORDVPNCLIENT_INSTALLED}, vpn: ${NORDVPN_VERSION}" \
-    && if [[ ${BASE_IMAGE} =~ ubuntu ]];then export NUID=1001; export NGID=100; fi \
+    && echo "os: ${BASE_IMAGE}, version: wg: ${NORDVPNCLIENT_INSTALLED}, vpn: ${NORDVPN_VERSION}" \
+    && if [[ "${BASE_IMAGE}" =~ ubuntu ]];then export NUID=1001; export NGID=100; fi \
     && addgroup --system vpn && useradd -lNms /bin/bash -u "${NUID:-1000}" -G nordvpn,vpn nordclient \
     && apt-get clean all && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     #transmission user
     && groupmod -g ${NGID:-1000} users \
     && useradd -u 911 -U -d /config -s /bin/false abc && usermod -G users abc \
-    && if [[ -n ${aptcacher} ]]; then rm /etc/apt/apt.conf.d/01proxy; fi \
+    && if [[ -n "${aptcacher}" ]]; then rm /etc/apt/apt.conf.d/01proxy; fi \
     # patch wg-quick script to remove the need for running in privilegied mode
     && sed -i "s:sysctl -q net.ipv4.conf.all.src_valid_mark=1:echo skipping setting net.ipv4.conf.all.src_valid_mark:" /usr/bin/wg-quick
 
