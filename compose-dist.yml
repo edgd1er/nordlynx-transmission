@@ -3,7 +3,9 @@ services:
     image: edgd1er/nordvpn-proxy:latest
     restart: unless-stopped
     ports:
-      - "1080:1080"
+      - "2080:1080" #socks proxy port
+      - "2888:8888" #http proxy port
+      - "9091:9091" #Transmission
     sysctls:
 #      - net.ipv4.conf.all.rp_filter=2 # Loose Reverse Path: https://access.redhat.com/solutions/53031
       - net.ipv6.conf.all.disable_ipv6=1 # disable ipv6

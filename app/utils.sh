@@ -82,7 +82,7 @@ getEthCidr() {
 generateDantedConf() {
   log "INFO: DANTE: set configuration socks proxy"
   SOURCE_DANTE_CONF=/etc/danted.conf.tmpl
-  DANTE_CONF=/etc/dante.conf
+  DANTE_CONF=/etc/danted.conf
   INTERFACE=$(getVpnItf)
   sed "s/INTERFACE/${INTERFACE}/" ${SOURCE_DANTE_CONF} >${DANTE_CONF}
   sed -i "s/DANTE_DEBUG/${DANTE_DEBUG}/" ${DANTE_CONF}
@@ -667,7 +667,7 @@ getTinyConf() {
 }
 
 getDanteConf() {
-  grep -v ^# /etc/dante.conf | sed "/^$/d"
+  grep -v ^# /etc/danted.conf | sed "/^$/d"
 }
 
 getTinyListen() {
