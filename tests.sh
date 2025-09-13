@@ -16,7 +16,7 @@ FAILED=0
 INTERVAL=4
 BUILD=0
 if [[ ${SERVICE} == 'transmission' ]]; then
-  TINYLOG=/config/log/tinyproxy/tinyproxy.log
+  TINYLOG=/config/log/tinyproxy.log
   DANTELOG=/config/log/dante.log
 else
   TINYLOG=/var/log/tinyproxy/tinyproxy.log
@@ -29,7 +29,7 @@ PROXY_HOST=$(ip -4 -j -f inet a | jq -r 'first(.[]|select(.ifname | IN("enp1s0",
 buildAndWait() {
   echo "Stopping and removing running containers"
   docker compose -f ${CPSE} down -v
-  [[ ${BUILD} -eq 1 ]] && b="--build" || bb=""
+  [[ ${BUILD} -eq 1 ]] && bb="--build" || bb=""
   echo "Building and starting image"
   docker compose -f ${CPSE} up -d ${bb}
   docker compose -f ${CPSE} exec lynx rm /var/log/{tinyproxy,dante}.log
@@ -225,6 +225,7 @@ while getopts ":bhtuv" option; do
   case ${option} in
   b)
     BUILD=1
+    buildAndWait
     checkContainer
     ;;
   h) # display Help
