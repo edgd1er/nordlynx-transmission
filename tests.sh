@@ -15,6 +15,7 @@ TRANS_PORT=9091
 FAILED=0
 INTERVAL=4
 BUILD=0
+n=0
 if [[ ${SERVICE} == 'transmission' ]]; then
   TINYLOG=/config/log/tinyproxy.log
   DANTELOG=/config/log/dante.log
@@ -32,13 +33,14 @@ buildAndWait() {
   [[ ${BUILD} -eq 1 ]] && bb="--build" || bb=""
   echo "Building and starting image"
   docker compose -f ${CPSE} up -d ${bb}
-  docker compose -f ${CPSE} exec lynx rm /var/log/{tinyproxy,dante}.log
+
+  docker compose -f ${CPSE} exec ${SERVICE} rm /var/log/{tinyproxy,dante}.log || true
   echo "Waiting for the container to be up.(every ${INTERVAL} sec)"
   logs=""
   while [ 0 -eq $(echo $logs | grep -c "exited: start_vpn (exit status 0; expected") ]; do
     logs="$(docker compose -f ${CPSE} logs)"
     sleep ${INTERVAL}
-    ((n++))
+    (( n+= 1 ))
     echo "loop: ${n}: $(docker compose -f ${CPSE} logs | tail -1)"
     [[ ${n} -eq 15 ]] && break || true
   done
@@ -51,7 +53,7 @@ areProxiesPortOpened() {
     msg="Test connection to port ${PORT}: "
     if [ 0 -eq $(echo "" | nc -v -q1 -w2 ${PROXY_HOST} ${PORT} 2>&1|grep -c -P "(succeeded|open)") ]; then
       msg+=" Failed"
-      ((FAILED += 1))
+      (( FAILED += 1 ))
     else
       msg+=" OK"
     fi
@@ -94,7 +96,7 @@ testProxies() {
   else
     echo "Error, curl through http proxy to https://ifconfig.me/ip failed"
     echo "or IP (${myIp}) == vpnIP (${vpnIP})"
-    ((FAILED += 1))
+    (( FAILED += 1 ))
   fi
 
   #check detected ips
@@ -110,7 +112,7 @@ testProxies() {
     #echo "Error, curl through socks proxy to https://ifconfig.me/ip failed"
     echo "Error, curl through socks proxy to http://ipv4.lafibre.info/ip.php failed"
     echo "or IP (${myIp}) == vpnIP (${vpnIP})"
-    ((FAILED += 1))
+    (( FAILED += 1))
   fi
 
   echo "# failed tests: ${FAILED}"
