@@ -37,7 +37,7 @@ ADD transmission_web_control_1.6.33.tar.xz /opt/transmission-ui/
 FROM $BASE_IMAGE AS os-base
 
 ARG aptcacher=''
-ARG VERSION=4.2.2
+ARG VERSION=4.2.3
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 ARG BASE_IMAGE
@@ -64,7 +64,7 @@ WORKDIR /app
 #hadolint ignore=DL3018,DL3008,SC2086
 RUN if [[ -n "${aptcacher}" ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
-    # allow to install resolvconf
+    # allow to install resolvconf \
     echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
     && apt-get update && export DEBIAN_FRONTEND=non-interactive \
     && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
@@ -83,16 +83,16 @@ RUN if [[ -n "${aptcacher}" ]]; then echo "Acquire::http::Proxy \"http://${aptca
     && apt-get install -qqy --no-install-recommends -y nordvpn="${VERSION}" \
     #&& apt-get remove -y wget nordvpn-release \
     && mkdir -p /run/nordvpn \
-    #chmod a+x /app/*.sh
+    #chmod a+x /app/*.sh \
     && echo "os: ${BASE_IMAGE}, version: wg: ${NORDVPNCLIENT_INSTALLED}, vpn: ${NORDVPN_VERSION}" \
     && if [[ "${BASE_IMAGE}" =~ ubuntu ]];then export NUID=1001; export NGID=100; fi \
     && addgroup --system vpn && useradd -lNms /bin/bash -u "${NUID:-1000}" -G nordvpn,vpn nordclient \
     && apt-get clean all && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    #transmission user
+    #transmission user \
     && groupmod -g ${NGID:-1000} users \
     && useradd -u 911 -U -d /config -s /bin/false abc && usermod -G users abc \
     && if [[ -n "${aptcacher}" ]]; then rm /etc/apt/apt.conf.d/01proxy; fi \
-    # patch wg-quick script to remove the need for running in privilegied mode
+    # patch wg-quick script to remove the need for running in privilegied mode \
     && sed -i "s:sysctl -q net.ipv4.conf.all.src_valid_mark=1:echo skipping setting net.ipv4.conf.all.src_valid_mark:" /usr/bin/wg-quick
 
 FROM os-base AS new
@@ -129,7 +129,6 @@ RUN echo "cpu: ${TARGETPLATFORM}, os: ${BASE_IMAGE}, version: tbt: ${TBT_VERSION
     && ls -alh /tmp/transmission_${TBT_VERSION}* \
     #&& debfile=(/tmp/transmission_${TBT_VERSION}*_${ARCH}.deb) \
     && debfile=("$(ls /tmp/transmission_${TBT_VERSION}*_${ARCH}.deb)") \
-    #&& mapfile -t debfile <<< "${debfiles}" \
     ; if [[ -z ${debfile[*]} ]]; then echo "deb package not found: transmission_${TBT_VERSION}*_${ARCH}.deb, error" ; else \
     dpkg -c "${debfile[@]}" \
     && dpkg -i "${debfile[@]}" \
