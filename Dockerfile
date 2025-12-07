@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.3
-#ARG BASE_IMAGE=debian:bookworm-slim
+#ARG BASE_IMAGE=debian:13-slim
 ARG BASE_IMAGE=ubuntu:24.04
 
 FROM --platform=$BUILDPLATFORM alpine:3.22 AS TransmissionUIs
@@ -66,18 +66,23 @@ RUN if [[ -n "${aptcacher}" ]]; then echo "Acquire::http::Proxy \"http://${aptca
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
     # allow to install resolvconf \
     echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
-    && apt-get update && export DEBIAN_FRONTEND=non-interactive \
-    && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
-    ca-certificates tzdata dante-server net-tools unzip unrar-free bc tar bash dnsutils \
-    tinyproxy ufw iputils-ping vim libdeflate0 libevent-2.1-7 libnatpmp1 libminiupnpc17 \
+    # trixie backports \
+    && if [[ "${BASE_IMAGE}" =~ (trixie|13) ]]; then echo -e "Types: deb deb-src\nURIs: http://deb.debian.org/debian\nSuites: trixie-backports\nComponents: main contrib non-free non-free-firmware\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\nEnabled: yes">/etc/apt/sources.list.d/trixie-backports.sources /etc/apt/sources.list \
+    && echo -e "Types: deb deb-src\nURIs: http://deb.debian.org/debian\nSuites: forky\nComponents: main contrib non-free non-free-firmware\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\nEnabled: yes">/etc/apt/sources.list.d/debian-testing.sources ; TB=1 ; UNP=18; else TB=0 ; UNP=17; fi \
+    && cat /etc/apt/sources.list.d/debian-testing.sources \
+    && apt-get update && export DEBIAN_FRONTEND=non-interactive && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
+    ca-certificates tzdata net-tools unzip unrar-free bc tar bash dnsutils tinyproxy ufw iputils-ping vim libdeflate0 libevent-2.1-7 libnatpmp1 libminiupnpc${UNP} \
     # wireguard \
     wireguard-tools \
+    && echo "BASE: ${BASE_IMAGE}, ${UNP}, ${TB}" \
+    && [[ 1 -eq ${TB} ]] && apt install -t trixie-backports --no-install-recommends -y dante-server libassuan9 e2fsprogs || \
+    apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy dante-server libassuan0 \
     #ui start \
     && if [[ 1 -eq ${NORDVPNCLIENT_INSTALLED} ]]; then \
     apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy \
     # nordvpn requirements \
     iproute2 iptables readline-common dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client \
-    gpg-wks-server gpgconf gpgsm libassuan0 libksba8 libnpth0 libreadline8 libsqlite3-0 lsb-base pinentry-curses; fi \
+    gpg-wks-server gpgconf gpgsm libksba8 libnpth0 libreadline8 libsqlite3-0 lsb-base pinentry-curses; fi \
     && wget -nv -t10 -O /tmp/nordrepo.deb  "https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/n/nordvpn-release/nordvpn-release_1.0.0_all.deb" \
     && apt-get install -qqy --no-install-recommends /tmp/nordrepo.deb && apt-get update \
     && apt-get install -qqy --no-install-recommends -y nordvpn="${VERSION}" \
@@ -116,15 +121,14 @@ SHELL ["/bin/bash", "-o", "pipefail", "-xcu"]
 
 #hadolint ignore=DL3008,SC2046,SC2086
 RUN echo "cpu: ${TARGETPLATFORM}, os: ${BASE_IMAGE}, version: tbt: ${TBT_VERSION}, vpn: ${NORDVPN_VERSION}" \
-    ; if [[ "${TBT_VERSION}" =~ ^3 ]]; then echo "Installing transmission from repository" \
+    && if [[ "dev" == "${TBT_VERSION}" ]]; then export TBT_VERSION=4.1; fi \
+    ; if [[ "${TBT_VERSION}" =~ ^3 ]] || [[ ${BASE_IMAGE} =~ 13  ]]; then echo "Installing transmission from repository" \
     && apt-get update && apt-get install -y --no-install-recommends transmission-daemon transmission-cli \
     && ln -s /usr/share/transmission/web/style /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/images /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/javascript /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/index.html /opt/transmission-ui/transmission-web-control/index.original.html \
-    ; fi \
-    ; if [[ "dev" == "${TBT_VERSION}" ]]; then export TBT_VERSION=4.1; fi \
-    ; if [[ "${TBT_VERSION}" =~ ^4 ]]; then echo "Installing transmission ${TBT_VERSION}" \
+    ; elif [[ "${TBT_VERSION}" =~ ^4 ]]; then echo "Installing transmission ${TBT_VERSION}" \
     && ARCH="$(dpkg --print-architecture)" \
     && ls -alh /tmp/transmission_${TBT_VERSION}* \
     #&& debfile=(/tmp/transmission_${TBT_VERSION}*_${ARCH}.deb) \
