@@ -12,9 +12,10 @@
 
 Ubuntu based images do not require **privileged** mode, debian based images do.
 
-2024/11/18, nordvpn reorganized its repository and removed pre 3.17.0 versions. privileged mode is now required for the container.
+2025/12/XX: moving to debian trixie/13
+2024/11/18: nordvpn reorganized its repository and removed pre 3.17.0 versions. privileged mode is now required for the container.
 30/03/2024: --privileged required for client >= 3.17.0. problem stopping container with client 3.17.x. 
-26/06/2023: moving to debian bookworm.
+26/06/2023: moving to debian bookworm/12.
 
 /!\ please consider this project as a work in progress especially concerning iptables/leak management when not using nordvpn client (ie: NORDVPN_PRIVKEY found). 
 

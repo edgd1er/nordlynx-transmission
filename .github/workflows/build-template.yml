@@ -22,7 +22,7 @@ on:
         description: "platforms linux/xx"
       base_image:
         required: false
-         default: "debian:13-slim"
+        default: "debian:13-slim"
         type: string
       wg:
         type: boolean

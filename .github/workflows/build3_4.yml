@@ -25,7 +25,7 @@ jobs:
       VERSION: ${{ steps.step2.outputs.VERSION }}
     steps:
       - name: checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         id: step1
       - name: get local nordvpn client version
         id: step2
@@ -68,7 +68,7 @@ jobs:
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
-      base_image: 'debian:bookworm-slim'
+      base_image: 'debian:13-slim'
       tbt_version: ${{ needs.show_vars.outputs.tbt_version4 }}
       tag: "v4"
       version: ${{ needs.show_vars.outputs.nversion }}

@@ -1,6 +1,6 @@
 services:
   proxy:
-    image: edgd1er/nordvpn-proxy:latest
+    image: edgd1er/nordvpn-transmission:latest
     restart: unless-stopped
     ports:
       - "2080:1080" #socks proxy port
