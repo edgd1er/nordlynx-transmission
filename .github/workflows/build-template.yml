@@ -22,7 +22,7 @@ on:
         description: "platforms linux/xx"
       base_image:
         required: false
-        default: "debian:bookworm-slim" # ubuntu:24.04
+         default: "debian:13-slim"
         type: string
       wg:
         type: boolean
@@ -78,7 +78,7 @@ jobs:
           echo "tagos=debian">> $GITHUB_ENV
 
       - name: checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
