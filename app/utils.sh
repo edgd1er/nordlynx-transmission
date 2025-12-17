@@ -356,7 +356,7 @@ startNordVpn() {
   res="$(nordvpn ${logincmd})" || true
   # restore debug if required.
   [[ ${DEBUG} != "false" ]] && set -x || true
-  if [[ "${res}" != *"Welcome to NordVPN"* ]] && [[ "${res}" != *"You are already logged in."* ]]; then
+  if [[ "${res}" != *"Welcome to NordVPN"* ]] && [[ "${res}" =~ (\'|a)re\ already\ logged\ in ]]; then
     log "ERROR: NORDVPN: cannot login: ${res}"
     exit 1
   fi
@@ -526,7 +526,7 @@ connectWireguardVpn() {
 }
 
 enforce_proxies_nordvpn() {
-  T_PORT=$(grep -oP "(?<=rpc-port\": )[^,]+" /config/transmission-home/settings.json)
+  T_PORT=$(grep -oP "(?<=rpc-port\": )[^,]+" /config/transmission-home/settings.json) || true
   T_PORT=${T_PORT:-9091}
   log "proxies: allow ports 1080, ${WEBPROXY_PORT}"
   nordvpn whitelist add port 1080 protocol TCP || true
