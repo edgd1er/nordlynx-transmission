@@ -7,7 +7,7 @@ on:
     inputs:
       push:
         type: boolean
-        default: false
+        default: true
         description: "push true/false"
 
 env:
