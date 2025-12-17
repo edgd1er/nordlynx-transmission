@@ -37,7 +37,7 @@ ADD transmission_web_control_1.6.33.tar.xz /opt/transmission-ui/
 FROM $BASE_IMAGE AS os-base
 
 ARG aptcacher=''
-ARG VERSION=4.3.0
+ARG VERSION=4.3.1
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 ARG BASE_IMAGE
@@ -75,7 +75,7 @@ RUN if [[ -n "${aptcacher}" ]]; then echo "Acquire::http::Proxy \"http://${aptca
     # wireguard \
     wireguard-tools \
     && echo "BASE: ${BASE_IMAGE}, ${UNP}, ${TB}" \
-    && [[ 1 -eq ${TB} ]] && apt install -t trixie-backports --no-install-recommends -y dante-server libassuan9 e2fsprogs || \
+    && [[ 1 -eq ${TB} ]] && apt-get install -t trixie-backports --no-install-recommends -y dante-server libassuan9 e2fsprogs || \
     apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy dante-server libassuan0 \
     #ui start \
     && if [[ 1 -eq ${NORDVPNCLIENT_INSTALLED} ]]; then \
