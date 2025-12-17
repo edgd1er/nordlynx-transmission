@@ -13,6 +13,7 @@ TBT_V4:=$(shell grep -oP '(?<= TBT_VERSION: ).+' .github/workflows/check_version
 TBT_V3:=$(shell grep -oP '(?<=#TBT_VERSION: ).+' .github/workflows/check_version.yml | tr -d '"' )
 TWCV:=$(shell grep -oP '(?<=TWCV: ).+' .github/workflows/check_version.yml )
 TICV:=$(shell grep -oP '(?<=TICV: ).+' .github/workflows/check_version.yml )
+BASE_IMAGE:= "debian:13-slim"
 
 # https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help: ## generate help list
@@ -25,23 +26,23 @@ lint: ## lint both dockerfile
 build: ## build image
 	@echo "build tbt v4 image with nordvpn client..."
 	#docker-compose build
-	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="${TBT_V4}" --build-arg TWCV="${TWCV}" --build-arg TICV="${TICV}" -f ./Dockerfile -t edgd1er/nordlynx-transmission:latest .
+	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg BASE_IMAGE=${BASE_IMAGE} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="${TBT_V4}" --build-arg TWCV="${TWCV}" --build-arg TICV="${TICV}" -f ./Dockerfile -t edgd1er/nordlynx-transmission:latest .
 
 builddev: ##build dev image
 	@echo "Build dev image"
-	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="dev" --build-arg TWCV="${TWCV}" --build-arg TICV="${TICV}" -f ./Dockerfile -t edgd1er/nordlynx-transmission:dev .
+	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg BASE_IMAGE=${BASE_IMAGE} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="dev" --build-arg TWCV="${TWCV}" --build-arg TICV="${TICV}" -f ./Dockerfile -t edgd1er/nordlynx-transmission:dev .
 
 build3: ##build dev image
 	@echo "Build transmission v3"
-	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="${TBT_V3}" --build-arg TWCV="${TWCV}" --build-arg TICV="${TICV}" -f ./Dockerfile -t edgd1er/nordlynx-transmission:v3 .
+	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg BASE_IMAGE=${BASE_IMAGE} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="${TBT_V3}" --build-arg TWCV="${TWCV}" --build-arg TICV="${TICV}" -f ./Dockerfile -t edgd1er/nordlynx-transmission:v3 .
 
 build4: ##build dev image
 	@echo "Build transmission v4 beta image"
-	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="${TBT_V4}" --build-arg TWCV="${TWCV}" --build-arg TICV="${TICV}" -f ./Dockerfile -t edgd1er/nordlynx-transmission:v4 .
+	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg BASE_IMAGE=${BASE_IMAGE} --build-arg NORDVPN_INSTALL=1 --build-arg VERSION=${NVPNVER} --build-arg NORDVPNCLIENT_INSTALLED=1 --build-arg TBT_VERSION="${TBT_V4}" --build-arg TWCV="${TWCV}" --build-arg TICV="${TICV}" -f ./Dockerfile -t edgd1er/nordlynx-transmission:v4 .
 
 buildnoclient: ## build image without nordvpn client
 	@echo "build image without nordvpn client"
-	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg NORDVPN_INSTALL=0 --build-arg TWCV="${TWCV}" --build-arg TICV="${TICV}" -f ./Dockerfile -t edgd1er/nordguard-transmission  .
+	docker buildx build --build-arg aptcacher=${APTCACHER} --build-arg BASE_IMAGE=${BASE_IMAGE} --build-arg NORDVPN_INSTALL=0 --build-arg TWCV="${TWCV}" --build-arg TICV="${TICV}" -f ./Dockerfile -t edgd1er/nordguard-transmission  .
 
 check:	## check versions
 	@lversion=$$( grep -oP "(?<=changelog\): )[^ ]+" README.md ) ;\
