@@ -2,7 +2,7 @@
 #ARG BASE_IMAGE=debian:13-slim
 ARG BASE_IMAGE=ubuntu:24.04
 
-FROM --platform=$BUILDPLATFORM alpine:3.22 AS TransmissionUIs
+FROM --platform=$BUILDPLATFORM alpine:3.23 AS TransmissionUIs
 ARG TWCV="1.6.33"
 ARG TICV="1.8.0"
 
@@ -37,7 +37,7 @@ ADD transmission_web_control_1.6.33.tar.xz /opt/transmission-ui/
 FROM $BASE_IMAGE AS os-base
 
 ARG aptcacher=''
-ARG VERSION=4.2.3
+ARG VERSION=4.3.0
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 ARG BASE_IMAGE
@@ -68,8 +68,8 @@ RUN if [[ -n "${aptcacher}" ]]; then echo "Acquire::http::Proxy \"http://${aptca
     echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
     # trixie backports \
     && if [[ "${BASE_IMAGE}" =~ (trixie|13) ]]; then echo -e "Types: deb deb-src\nURIs: http://deb.debian.org/debian\nSuites: trixie-backports\nComponents: main contrib non-free non-free-firmware\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\nEnabled: yes">/etc/apt/sources.list.d/trixie-backports.sources /etc/apt/sources.list \
-    && echo -e "Types: deb deb-src\nURIs: http://deb.debian.org/debian\nSuites: forky\nComponents: main contrib non-free non-free-firmware\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\nEnabled: yes">/etc/apt/sources.list.d/debian-testing.sources ; TB=1 ; UNP=18; else TB=0 ; UNP=17; fi \
-    && cat /etc/apt/sources.list.d/debian-testing.sources \
+    && echo -e "Types: deb deb-src\nURIs: http://deb.debian.org/debian\nSuites: forky\nComponents: main contrib non-free non-free-firmware\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\nEnabled: yes">/etc/apt/sources.list.d/debian-testing.sources ; TB=1 ; UNP=18 \
+    && cat /etc/apt/sources.list.d/debian-testing.sources ; else TB=0 ; UNP=17; fi \
     && apt-get update && export DEBIAN_FRONTEND=non-interactive && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
     ca-certificates tzdata net-tools unzip unrar-free bc tar bash dnsutils tinyproxy ufw iputils-ping vim libdeflate0 libevent-2.1-7 libnatpmp1 libminiupnpc${UNP} \
     # wireguard \
