@@ -356,7 +356,7 @@ startNordVpn() {
   res="$(nordvpn ${logincmd})" || true
   # restore debug if required.
   [[ ${DEBUG} != "false" ]] && set -x || true
-  if [[ "${res}" != *"Welcome to NordVPN"* ]] && [[ "${res}" =~ (\'|a)re\ already\ logged\ in ]]; then
+  if [[ "${res}" != *"Welcome to NordVPN"* ]] && [[ "${res,,}" =~ (\'|a)re\ already\ logged\ in ]]; then
     log "ERROR: NORDVPN: cannot login: ${res}"
     exit 1
   fi
