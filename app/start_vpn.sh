@@ -57,6 +57,7 @@ chattr -i /etc/resolv.conf
 echo "nameserver 1.1.1.1" >/etc/resolv.conf
 
 setTimeZone
+allow_traffic_before_vpn
 
 # checkLatest commented as no more updated
 checkLatestApt

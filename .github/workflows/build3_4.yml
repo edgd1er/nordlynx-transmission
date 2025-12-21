@@ -23,6 +23,7 @@ jobs:
     # Map a step output to a job output
     outputs:
       VERSION: ${{ steps.step2.outputs.VERSION }}
+      push: ${{ steps.step2.outputs.push }}
     steps:
       - name: checkout code
         uses: actions/checkout@v6
@@ -30,10 +31,17 @@ jobs:
       - name: get local nordvpn client version
         id: step2
         run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+          echo "push=true" >> "$GITHUB_OUTPUT"
+          else
+          # pour workflow_dispatch on lit l'input (par défaut true)
+          echo "push=${{ github.event.inputs.push != '' && github.event.inputs.push || 'true' }}" >> "$GITHUB_OUTPUT"
+          fi
           grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' '
           echo "VERSION=$(grep -oP '(?<=changelog\): )[^ ]+' README.md | tr -d ' ')" >> "$GITHUB_OUTPUT"
           echo "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
+
   show_vars:
     runs-on: ubuntu-latest
     needs: getNordvpnVersions
@@ -43,12 +51,16 @@ jobs:
       nversion: ${{ needs.getNordvpnVersions.outputs.VERSION }}
       twcv: ${{ env.twcv }}
       ticv: ${{ env.ticv }}
-      push: ${{ inputs.push }}
+      push: 'true' #${{ needs.getNordvpnVersions.outputs.push }}
     steps:
       - name: "show vars"
-        run: echo "TBT_VERSION3=${tbt_version3},TBT_VERSION4=${tbt_version4}, VERSION=${{ needs.getNordvpnVersions.outputs.VERSION }}, TWCV=${twcv}, TICV=${ticv}"
+        run: |
+          echo "TBT_VERSION3=${tbt_version3},TBT_VERSION4=${tbt_version4}, VERSION=${VERSION}, TWCV=${twcv}, TICV=${ticv},push=${push}"
+          echo "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
 
   build-v3-images:
+    if: false #disable this step
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
@@ -74,7 +86,7 @@ jobs:
       version: ${{ needs.show_vars.outputs.nversion }}
       twcv: ${{ needs.show_vars.outputs.twcv }}
       ticv: ${{ needs.show_vars.outputs.ticv }}
-      push: ${{ needs.show_vars.outputs.push }}
+      push: 'true' #${{ needs.show_vars.outputs.push }}
     secrets: inherit
     needs:
       - getNordvpnVersions
@@ -91,7 +103,7 @@ jobs:
       twcv: ${{ needs.show_vars.outputs.twcv }}
       ticv: ${{ needs.show_vars.outputs.ticv }}
       ptf: "linux/amd64,linux/arm64v8,linux/arm32/v7"
-      push: ${{ needs.show_vars.outputs.push }}
+      push: 'true' #${{ needs.show_vars.outputs.push }}
     secrets: inherit
     needs:
       - getNordvpnVersions
@@ -107,7 +119,7 @@ jobs:
       version: ${{ needs.show_vars.outputs.nversion }}
       twcv: ${{ needs.show_vars.outputs.twcv }}
       ticv: ${{ needs.show_vars.outputs.ticv }}
-      push: ${{ needs.show_vars.outputs.push }}
+      push: 'true' #${{ needs.show_vars.outputs.push }}
     secrets: inherit
     needs:
       - getNordvpnVersions
@@ -124,7 +136,7 @@ jobs:
       version: ${{ needs.show_vars.outputs.nversion }}
       twcv: ${{ needs.show_vars.outputs.twcv }}
       ticv: ${{ needs.show_vars.outputs.ticv }}
-      push: ${{ needs.show_vars.outputs.push }}
+      push: 'true' #${{ needs.show_vars.outputs.push }}
     secrets: inherit
     needs:
       - getNordvpnVersions
