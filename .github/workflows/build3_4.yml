@@ -30,10 +30,17 @@ jobs:
       - name: get local nordvpn client version
         id: step2
         run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+          echo "push=true" >> "$GITHUB_OUTPUT"
+          else
+          # pour workflow_dispatch on lit l'input (par défaut true)
+          echo "push=${{ github.event.inputs.push != '' && github.event.inputs.push || 'true' }}" >> "$GITHUB_OUTPUT"
+          fi
           grep -oP "(?<=changelog\): )[^ ]+" README.md | tr -d ' '
           echo "VERSION=$(grep -oP '(?<=changelog\): )[^ ]+' README.md | tr -d ' ')" >> "$GITHUB_OUTPUT"
           echo "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
+
   show_vars:
     runs-on: ubuntu-latest
     needs: getNordvpnVersions
@@ -43,10 +50,13 @@ jobs:
       nversion: ${{ needs.getNordvpnVersions.outputs.VERSION }}
       twcv: ${{ env.twcv }}
       ticv: ${{ env.ticv }}
-      push: ${{ inputs.push }}
+      push: ${{ needs.getNordvpnVersions-push.outputs.push }}
     steps:
       - name: "show vars"
-        run: echo "TBT_VERSION3=${tbt_version3},TBT_VERSION4=${tbt_version4}, VERSION=${{ needs.getNordvpnVersions.outputs.VERSION }}, TWCV=${twcv}, TICV=${ticv}"
+        run: |
+          echo "TBT_VERSION3=${tbt_version3},TBT_VERSION4=${tbt_version4}, VERSION=${VERSION}, TWCV=${twcv}, TICV=${ticv},push=${push}"
+          echo "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
 
   build-v3-images:
     uses: ./.github/workflows/build-template.yml
