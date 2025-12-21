@@ -24,6 +24,15 @@ export GW
 export INT
 export nordvpn_api="https://api.nordvpn.com"
 
+#Functions
+
+allow_traffic_before_vpn() {
+  if [[ 0 -lt $(supervisorctl status nordvpn | grep -ic "running") ]]; then
+    nordvpn killswitch disable
+    nordvpn firewall disable
+  fi
+}
+
 getTransCreds() {
   CREDS=""
   #use secrets
@@ -276,7 +285,7 @@ setup_nordvpn() {
   log "INFO: NORDVPN: starting nordvpn daemon"
   action=start
   isRunning=$(supervisorctl status nordvpnd | grep -c RUNNING 2>/dev/null) || true
-  if [[ ${isRunning} -ne 0  ]]; then
+  if [[ ${isRunning} -ne 0 ]]; then
     action=restart
   else
     #if not started, remove socket
@@ -356,7 +365,7 @@ startNordVpn() {
   res="$(nordvpn ${logincmd})" || true
   # restore debug if required.
   [[ ${DEBUG} != "false" ]] && set -x || true
-  if [[ "${res}" != *"Welcome to NordVPN"* ]] && [[ "${res,,}" =~ (\'|a)re\ already\ logged\ in ]]; then
+  if [[ "${res}" != *"Welcome to NordVPN"* ]] && [[ ! "${res,,}" =~ (\'|a)re\ already\ logged\ in ]]; then
     log "ERROR: NORDVPN: cannot login: ${res}"
     exit 1
   fi
