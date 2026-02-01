@@ -5,6 +5,7 @@ ARG BASE_IMAGE=ubuntu:24.04
 FROM --platform=$BUILDPLATFORM alpine:3.23 AS TransmissionUIs
 ARG TWCV="1.6.33"
 ARG TICV="1.8.0"
+ARG FLOODVER="1.0.1"
 
 #hadolint ignore=DL3018,DL3008,DL4006,DL4001
 RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
@@ -14,7 +15,7 @@ RUN apk update && apk --no-cache add curl jq && mkdir -p /opt/transmission-ui \
     && wget --no-cache -qO- https://github.com/killemov/Shift/archive/master.tar.gz | tar xz -C /opt/transmission-ui \
     && mv /opt/transmission-ui/Shift-master /opt/transmission-ui/shift \
     && echo "Install Flood for Transmission (latest)" \
-    && wget --no-cache -qO- https://github.com/johman10/flood-for-transmission/releases/download/latest/flood-for-transmission.tar.gz | tar xz -C /opt/transmission-ui \
+    && wget --no-cache -qO- https://github.com/johman10/flood-for-transmission/releases/download/v${FLOODVER}/flood-for-transmission.tar.gz | tar xz -C /opt/transmission-ui \
     && echo "Install Combustion (archived release)" \
     && wget --no-cache -qO- https://github.com/Secretmapper/combustion/archive/release.tar.gz | tar xz -C /opt/transmission-ui \
     && echo "Install kettu (archive master)" \
@@ -93,7 +94,6 @@ RUN if [[ -n "${aptcacher}" ]]; then echo "Acquire::http::Proxy \"http://${aptca
     && if [[ "${BASE_IMAGE}" =~ ubuntu ]];then export NUID=1001; export NGID=100; fi \
     && addgroup --system vpn && useradd -lNms /bin/bash -u "${NUID:-1000}" -G nordvpn,vpn nordclient \
     && apt-get clean all && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    #transmission user \
     && groupmod -g ${NGID:-1000} users \
     && useradd -u 911 -U -d /config -s /bin/false abc && usermod -G users abc \
     && if [[ -n "${aptcacher}" ]]; then rm /etc/apt/apt.conf.d/01proxy; fi \
@@ -104,9 +104,10 @@ FROM os-base AS new
 
 ARG aptcacher=''
 ARG DEBIAN_FRONTEND=noninteractive
-ARG TBT_VERSION=4.0.6
+ARG TBT_VERSION=4.1.0
 ARG TARGETPLATFORM
 ARG BASE_IMAGE
+ARG DEB=0
 
 ENV TZ=${TZ:-Etc/UTC}
 ENV NORDVPNCLIENT_INSTALLED=${NORDVPNCLIENT_INSTALLED}
@@ -115,27 +116,26 @@ VOLUME /data
 VOLUME /config
 
 COPY --from=TransmissionUIs /opt/transmission-ui /opt/transmission-ui
-COPY out/transmission_${TBT_VERSION}*.deb /tmp/
+COPY out2/bookworm/transmission_${TBT_VERSION}*.deb /tmp/
 
 SHELL ["/bin/bash", "-o", "pipefail", "-xcu"]
 
 #hadolint ignore=DL3008,SC2046,SC2086
-RUN echo "cpu: ${TARGETPLATFORM}, os: ${BASE_IMAGE}, version: tbt: ${TBT_VERSION}, vpn: ${NORDVPN_VERSION}" \
+RUN echo "cpu: ${TARGETPLATFORM}, os: ${BASE_IMAGE}, version: tbt: ${TBT_VERSION}, vpn: ${NORDVPN_VERSION}; debfiles: ${DEB}" \
+    && ARCH="$(dpkg --print-architecture)" \
     && if [[ "dev" == "${TBT_VERSION}" ]]; then export TBT_VERSION=4.1; fi \
-    ; if [[ "${TBT_VERSION}" =~ ^3 ]] || [[ ${BASE_IMAGE} =~ 13  ]]; then echo "Installing transmission from repository" \
+    ; if [[ 0 -eq ${DEB} ]]; then echo "Installing transmission from repository: $( apt list transmission 2>/dev/null|grep ^trans)" \
     && apt-get update && apt-get install -y --no-install-recommends transmission-daemon transmission-cli \
     && ln -s /usr/share/transmission/web/style /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/images /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/javascript /opt/transmission-ui/transmission-web-control \
     && ln -s /usr/share/transmission/web/index.html /opt/transmission-ui/transmission-web-control/index.original.html \
-    ; elif [[ "${TBT_VERSION}" =~ ^4 ]]; then echo "Installing transmission ${TBT_VERSION}" \
-    && ARCH="$(dpkg --print-architecture)" \
+    ; else debfile=("$(ls /tmp/transmission_${TBT_VERSION}*_${ARCH}.deb)") \
+    && echo "Installing transmission ${TBT_VERSION} from ${debfile[*]}" \
     && ls -alh /tmp/transmission_${TBT_VERSION}* \
     #&& debfile=(/tmp/transmission_${TBT_VERSION}*_${ARCH}.deb) \
-    && debfile=("$(ls /tmp/transmission_${TBT_VERSION}*_${ARCH}.deb)") \
-    ; if [[ -z ${debfile[*]} ]]; then echo "deb package not found: transmission_${TBT_VERSION}*_${ARCH}.deb, error" ; else \
-    dpkg -c "${debfile[@]}" \
-    && dpkg -i "${debfile[@]}" \
+    ; if [[ -z ${debfile[*]} ]]; then echo "deb package not found: transmission_${TBT_VERSION}*_${ARCH}.deb, error" ; exit 1; else \
+    dpkg -c "${debfile[@]}" && dpkg -i "${debfile[@]}" \
     && mv /usr/local/share/transmission/public_html /usr/local/share/transmission/public_html_original \
     && mkdir -p /usr/local/share/transmission/public_html \
     && ln -s /usr/local/share/transmission/public_html/images /opt/transmission-ui/transmission-web-control/ \

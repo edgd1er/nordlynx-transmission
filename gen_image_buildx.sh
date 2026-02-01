@@ -5,18 +5,25 @@
 #Variables
 localDir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 DKRFILE=${localDir}/Dockerfile
+#DKRFILE_CLIENT=${localDir}/Dockerfile_client_bookworm
+DKRFILE_CLIENT=${localDir}/Dockerfile_client
 ARCHI=$(dpkg --print-architecture)
 IMAGE=nordlynx-transmission
 DUSER=edgd1er
 [[ "${ARCHI}" != "armhf" ]] && isMultiArch=$(docker buildx ls | grep -c amd-arm)
-aptCacher=$(ip route get 1 | awk '{print $7}')
+aptCacher=
+aptCacher="192.168.53.212"
+#aptCacher=$(ip route get 1 | awk '{print $7}')
 PROGRESS=plain #text auto plain
 PROGRESS=auto  #text auto plain
 CACHE=""
+#CACHE="--no-cache"
 WHERE="--load"
 #TBT_VERSION=3.00
 #TBT_VERSION=4.0.6
 TBT_VERSION=4.1.0 #dev # 4.1.x
+NODEVERSION=20
+DEB=0
 
 #exit on error
 set -e -u -o pipefail
@@ -44,10 +51,10 @@ case "${TBT_VERSION}" in
   dev)
     TAG="${DUSER}/${IMAGE}:dev"
     ;;
-  4.0.6)
+  4.1.0)
     TAG="${DUSER}/${IMAGE}:v4"
     ;;
-  4.1.0)
+  4.2.0)
     TAG="${DUSER}/${IMAGE}:dev"
     ;;
 esac
@@ -66,13 +73,15 @@ while getopts "ah?vpc" opt; do
     set -x
     ;;
   a)
-    PTF=linux/arm/v7
+    PTF=linux/arm64/v8
     #build multi arch images
     if [ "${ARCHI}" == "amd64" ]; then
       PTF=linux/amd64
       # load is not compatible with multi arch build
       if [[ $WHERE == "--push" ]]; then
         PTF+=,linux/arm64/v8,linux/arm/v7 #,linux/arm/v6
+        #PTF=linux/arm/v7,linux/arm/v6
+        #PTF+=,linux/arm64/v8 #linux/arm/v7 #,linux/arm/v6 trixie removed
         #enable multi arch build framework
         if [ $isMultiArch -eq 0 ]; then
           enableMultiArch
@@ -83,8 +92,8 @@ while getopts "ah?vpc" opt; do
     if [[ ${TBT_VERSION} == "dev" ]]; then
       PTFARG=linux/amd64,linux/arm64/v8,linux/arm/v7
     else
-      #PTFARG=linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
-      PTFARG=linux/amd64,linux/arm64/v8,linux/arm/v7
+      PTFARG=linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+      #PTFARG=linux/amd64,linux/arm64/v8,linux/arm/v7
     fi
     ;;
   p)
@@ -94,17 +103,19 @@ while getopts "ah?vpc" opt; do
       wget -O transmission-${TBT_VERSION}.tar.xz https://github.com/transmission/transmission/releases/download/${TBT_VERSION}/transmission-${TBT_VERSION}.tar.xz
     fi
     date
-    docker buildx build --builder=amd-arm --platform ${PTF} -f ${DKRFILE}.deb --build-arg TBT_VERSION=$TBT_VERSION \
-      $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher --provenance false -o out .
-    find out/ -mindepth 2 -type f -print -exec mv {} out/ \;
+    docker buildx build --builder=amd-arm --platform ${PTF} -f ${DKRFILE_CLIENT} $CACHE  \
+    --build-arg TBT_VERSION=$TBT_VERSION --build-arg NODEVERSION=$NODEVERSION --build-arg aptCacher=$aptCacher \
+    --progress $PROGRESS --provenance false -o out .
+    find out/ -mindepth 2 -path "*linux_*" -type f -print -exec mv {} out/ \;
     date
     ;;
   c)
     #enable multi arch build framework
     echo -e "building $TAG, name $NAME using cache $CACHE and apt cache $aptCacher for ${PTF} in ${TBT_VERSION}"
     #docker buildx use amd-arm
-    docker buildx build --builder=amd-arm ${WHERE} --platform ${PTF} -f ${DKRFILE} --build-arg TBT_VERSION=$TBT_VERSION \
-      $CACHE --progress $PROGRESS --build-arg aptCacher=$aptCacher --provenance false -t $TAG .
+    docker buildx build --builder=amd-arm ${WHERE} --platform ${PTF} -f ${DKRFILE} $CACHE  \
+      --build-arg TBT_VERSION=$TBT_VERSION --build-arg NODEVERSION=$NODEVERSION --build-arg aptCacher=$aptCacher \
+            --build-arg DEB=${DEB} --progress $PROGRESS --provenance false -t $TAG .
     #done
     docker manifest inspect $TAG #| grep -E "architecture|variant"
     #docker manifest inspect $TAG | jq -r '.manifests[].platform|[.architecture,.os,.variant]| @tsv'

@@ -3,13 +3,15 @@
 set -euop pipefail
 
 #vars
-CPSE=compose.yml
+PREFIX=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+DOCKERLIB=$(grep -oP "(?<=data-root\": \")[^\"]+" /etc/docker/daemon.json)
+[[ -f ${PREFIX}/nordlynx-transmission.yml ]] && CPSEFILE=${PREFIX}/nordlynx-transmission.yml || CPSEFILE=${PREFIX}/compose.yml
 
-#HTTP_PORT=28$(grep -oP '(?<=\- "28)[^:]+' ${CPSE})
-#SOCK_PORT=20$(grep -oP '(?<=\- "20)[^:]+' ${CPSE})
-HTTP_PORT=$(grep -oP "[0-9]{4}(?=:[0-9]{4}\" #http)" ${CPSE})
-SOCK_PORT=$(grep -oP "[0-9]{4}(?=:[0-9]{4}\" #socks)" ${CPSE})
-SERVICE=$(sed -n '/services:/{n;p}' ${CPSE} | grep -oP '\w+')
+#HTTP_PORT=28$(grep -oP '(?<=\- "28)[^:]+' ${CPSEFILE})
+#SOCK_PORT=20$(grep -oP '(?<=\- "20)[^:]+' ${CPSEFILE})
+HTTP_PORT=$(grep -oP "[0-9]{4}(?=:[0-9]{4}\" #http)" ${CPSEFILE})
+SOCK_PORT=$(grep -oP "[0-9]{4}(?=:[0-9]{4}\" #socks)" ${CPSEFILE})
+SERVICE=$(sed -n '/services:/{n;p}' ${CPSEFILE} | grep -oP '\w+')
 TRANS_PORT=9091
 #Common
 FAILED=0
@@ -26,25 +28,26 @@ fi
 
 PROXY_HOST=$(ip -4 -j -f inet a | jq -r 'first(.[]|select(.ifname | IN("enp1s0","eth0","wlp2s0","bond0"))| .addr_info[]|select(.family=="inet")|.local)')
 
+
 #Functions
 buildAndWait() {
   echo "Stopping and removing running containers"
-  docker compose -f ${CPSE} down -v
+  docker compose -f ${CPSEFILE} down -v
   [[ ${BUILD} -eq 1 ]] && bb="--build" || bb=""
   echo "Building and starting image"
-  docker compose -f ${CPSE} up -d ${bb}
+  docker compose -f ${CPSEFILE} up -d ${bb}
 
-  docker compose -f ${CPSE} exec ${SERVICE} rm /var/log/{tinyproxy,dante}.log || true
+  docker compose -f ${CPSEFILE} exec ${SERVICE} rm /var/log/{tinyproxy,dante}.log || true
   echo "Waiting for the container to be up.(every ${INTERVAL} sec)"
   logs=""
   while [ 0 -eq $(echo $logs | grep -c "exited: start_vpn (exit status 0; expected") ]; do
-    logs="$(docker compose -f ${CPSE} logs)"
+    logs="$(docker compose -f ${CPSEFILE} logs)"
     sleep ${INTERVAL}
     (( n+= 1 ))
-    echo "loop: ${n}: $(docker compose -f ${CPSE} logs | tail -1)"
+    echo "loop: ${n}: $(docker compose -f ${CPSEFILE} logs | tail -1)"
     [[ ${n} -eq 15 ]] && break || true
   done
-  docker compose -f ${CPSE} logs
+  docker compose -f ${CPSEFILE} logs
 }
 
 areProxiesPortOpened() {
@@ -73,8 +76,8 @@ testProxies() {
     TCREDS="${usertiny}:${passtiny}@"
     DCREDS="${TCREDS}"
   else
-    usertiny=$(grep -oP "(?<=- TINYUSER=)[^ ]+" ${CPSE})
-    passtiny=$(grep -oP "(?<=- TINYPASS=)[^ ]+" ${CPSE})
+    usertiny=$(grep -oP "(?<=- TINYUSER=)[^ ]+" ${CPSEFILE})
+    passtiny=$(grep -oP "(?<=- TINYPASS=)[^ ]+" ${CPSEFILE})
     echo "Getting tinyCreds from compose: ${usertiny}:${passtiny}"
     TCREDS="${usertiny}:${passtiny}@"
     DCREDS="${TCREDS}"
@@ -122,16 +125,16 @@ testProxies() {
 getInterfacesInfo() {
   docker compose exec ${SERVICE} bash -c "nordvpn version"
   docker compose exec ${SERVICE} bash -c "ip -j a |jq  '.[]|select(.ifname|test(\"wg0|tun|nordlynx\"))|.ifname'"
-  itf=$(docker compose -f ${CPSE} exec ${SERVICE} ip -j a)
+  itf=$(docker compose -f ${CPSEFILE} exec ${SERVICE} ip -j a)
   echo eth0:$(echo $itf | jq -r '.[] |select(.ifname=="eth0")| .addr_info[].local')
   echo wg0: $(echo $itf | jq -r '.[] |select(.ifname=="wg0")| .addr_info[].local')
   echo nordlynx: $(echo $itf | jq -r '.[] |select(.ifname=="nordlynx")| .addr_info[].local')
-  docker compose -f ${CPSE} exec ${SERVICE} bash -c 'echo "nordlynx conf: $(wg showconf nordlynx 2>/dev/null)"'
-  docker compose -f ${CPSE} exec ${SERVICE} bash -c 'echo "wg conf: $(wg showconf wg0 2>/dev/null)"'
+  docker compose -f ${CPSEFILE} exec ${SERVICE} bash -c 'echo "nordlynx conf: $(wg showconf nordlynx 2>/dev/null)"'
+  docker compose -f ${CPSEFILE} exec ${SERVICE} bash -c 'echo "wg conf: $(wg showconf wg0 2>/dev/null)"'
 }
 
 getAliasesOutput() {
-  docker compose -f ${CPSE} exec ${SERVICE} bash -c 'while read -r line; do echo $line;eval $line;done <<<$(grep ^alias ~/.bashrc | cut -f 2 -d"'"'"'")'
+  docker compose -f ${CPSEFILE} exec ${SERVICE} bash -c 'while read -r line; do echo $line;eval $line;done <<<$(grep ^alias ~/.bashrc | cut -f 2 -d"'"'"'")'
 }
 
 getTransWebPage() {
@@ -143,11 +146,11 @@ getTransWebPage() {
 }
 
 checkOuput() {
-  TINY_OUT=$(grep -oP '(?<=\- TINYLOGOUTPUT=)[^ ]+' ${CPSE}) || TINY_OUT="stdout"
-  DANTE_OUT=$(grep -oP '(?<=\- DANTE_LOGOUTPUT=)[^ ]+' ${CPSE}) || DANTE_OUT="stdout"
-  DANTE_RES=$(docker compose -f ${CPSE} exec ${SERVICE} grep -oP "(?<=^logoutput: ).+" /etc/danted.conf 2>/dev/null || true)
+  TINY_OUT=$(grep -oP '(?<=\- TINYLOGOUTPUT=)[^ ]+' ${CPSEFILE}) || TINY_OUT="stdout"
+  DANTE_OUT=$(grep -oP '(?<=\- DANTE_LOGOUTPUT=)[^ ]+' ${CPSEFILE}) || DANTE_OUT="stdout"
+  DANTE_RES=$(docker compose -f ${CPSEFILE} exec ${SERVICE} grep -oP "(?<=^logoutput: ).+" /etc/danted.conf 2>/dev/null || true)
   DANTE_RES=${DANTE_RES:-'stdout'}
-  TINY_RES=$(docker compose -f ${CPSE} exec ${SERVICE} grep -oP "(?<=^LogFile )(?:\")[^\"]+" /etc/tinyproxy/tinyproxy.conf | tr -d '"' || true)
+  TINY_RES=$(docker compose -f ${CPSEFILE} exec ${SERVICE} grep -oP "(?<=^LogFile )(?:\")[^\"]+" /etc/tinyproxy/tinyproxy.conf | tr -d '"' || true)
   TINY_RES=${TINY_RES:-'stdout'}
   echo "Res tiny: ${TINY_RES}, dante: ${DANTE_RES}"
   echo -e "\nOut tiny: ${TINY_OUT}, dante: ${DANTE_OUT}"
@@ -172,7 +175,7 @@ checkOuput() {
   fi
   #tinyproxylog check
   if [[ ${TINY_OUT} =~ file ]]; then
-    t=$(($(date +%s) - $(docker compose -f ${CPSE} exec ${SERVICE} date +%s -r ${TINYLOG})))
+    t=$(($(date +%s) - $(docker compose -f ${CPSEFILE} exec ${SERVICE} date +%s -r ${TINYLOG})))
     if [[ ${TINY_RES} == stdout ]] || [[ 10000 -lt ${t} ]]; then
       echo "ERROR, $TINYLOG not found when $TINY_OUT == file. Last access: ${t}, config found: ${TINY_RES}"
     else
@@ -207,9 +210,24 @@ checkContainer() {
   [[ 1 -eq ${BUILD} ]] && docker compose down
 }
 
+fixContainer(){
+  # ne pas intervenir si le service tourne.
+  if [[ -z "$(docker compose -f ${CPSEFILE} ps --services | tr -d '\n' | grep transmission)" ]]; then
+    locked_file=$(docker compose -f ${CPSEFILE} up -d 2>&1 | grep -oP "(${DOCKERLIB}[^:]+|[^ ]+(?=(: operation not permitted|: container is marked for removal)))") || true
+    echo "container stopped, locking for locked file: ${locked_file}"
+    #result found but no file listed
+    if [[ -n ${locked_file} ]] && [[ 0 -eq $(echo $locked_file |grep -c "unable to remove") ]]; then
+      locked_file=$(docker compose -f ${CPSEFILE} down -v 2>&1 | grep -oP "(${DOCKERLIB}[^:]+|[^ ]+(?=: operation not permitted))") || true
+    fi
+    sudo time chattr -i ${locked_file}
+    time docker compose -f ${CPSEFILE} up -d
+  fi
+}
+
 usage() {
   echo "$0: build and test container"
   echo -e "\t-b\tBuild and test"
+  echo -e "\t-f\tFix inode lock in docker"
   echo -e "\t-h\tThis help"
   echo -e "\t-t\tTest a running container"
   echo -e "\t-u\tTest an ubuntu container (debug nordvpn client)"
@@ -223,12 +241,15 @@ usage() {
 myIp=$(curl -4m5 -sq https://ifconfig.me/ip)
 
 # Get the options
-while getopts ":bhtuv" option; do
+while getopts ":bfhtuv" option; do
   case ${option} in
   b)
     BUILD=1
     buildAndWait
     checkContainer
+    ;;
+  f)
+  fixContainer
     ;;
   h) # display Help
     usage

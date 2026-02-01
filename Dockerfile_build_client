@@ -1,0 +1,100 @@
+FROM debian:trixie-slim AS base
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+#hadolint ignore=DL3008,DL3009
+RUN  if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
+    echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
+  ls -al /etc/apt/sources.list.d \
+#  && echo -e """Types: deb \n\
+#URIs: https://deb.debian.org/debian \n\
+#Suites: trixie trixie-updates \n\
+#Components: main contrib non-free non-free-firmware \n\
+#Enabled: yes \n\
+#Signed-By: /usr/share/keyrings/debian-archive-keyring.pgp \n\
+#\n\
+#Types: deb \n\
+#URIs: https://security.debian.org/debian-security \n\
+#Suites: trixie-security \n\
+#Components: main contrib non-free non-free-firmware \n\
+#Enabled: yes \n\
+#Signed-By: /usr/share/keyrings/debian-archive-keyring.pgp""" >/etc/apt/sources.list.d/debian2.sources \
+    && cat /etc/apt/sources.list.d/debian.sources \
+    && ls -al /etc/apt/sources.list.d
+    # apt-add-repository non-free
+RUN cat /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get update && apt-get install -y --no-install-recommends \
+    dumb-init openvpn privoxy procps socat libevent-2.1-7 libnatpmp1 libminiupnpc18 \
+    tzdata dnsutils iputils-ping ufw openssh-client git jq curl wget unrar-free unzip bc libdeflate0
+    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash \
+    && nvm install ${NODEVERSION} \
+    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+
+FROM base AS devbase
+ARG TBT_VERSION=4.1s
+ARG LIBEVENT_VERSION=2.1.12-stable
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+#hadolint ignore=DL3018,DL3008
+RUN apt-get install -y --no-install-recommends ca-certificates libcurl4-openssl-dev libssl-dev \
+    pkg-config build-essential checkinstall wget tar zlib1g-dev intltool jq bash cmake g++ make python3 \
+    gettext libdeflate-dev libevent-dev libfmt-dev libminiupnpc-dev gcc \
+    libnatpmp-dev libpsl-dev ninja-build xz-utils clang-format clang clang-tidy git gnupg libclang-rt-19-dev
+
+WORKDIR /var/tmp/
+#hadolint ignore=DL3003,DL3008,SC2086
+RUN if [[ "dev" == "${TBT_VERSION}" ]]; then \
+    curl -fsSL https://deb.nodesource.com/setup_current.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs libgtkmm-3.0-dev gettext qttools5-dev build-essential cmake libcurl4-openssl-dev libssl-dev gnupg \
+    && echo "Fetching and building ${TBT_VERSION} of transmission" \
+    && git clone --depth 1 --branch main https://github.com/transmission/transmission \
+    && cd transmission  \
+    && ver=$(grep -oP "(?<=TR_VERSION_(MAJOR|MINOR|PATCH) \")[^\"]+" ./CMakeLists.txt | tr '\n' '.' | grep -oP "[0-9]+\.[0-9]+\.[0-9]+") \
+    && git submodule update --init && mkdir build \
+    && cd build && cmake \
+        -S src \
+        -B obj \
+        -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DCMAKE_CXX_COMPILER='/usr/bin/clang++' \
+        -DCMAKE_CXX_FLAGS='-gdwarf-4 -fno-omit-frame-pointer -fsanitize=address,leak,undefined' \
+        -DCMAKE_C_COMPILER='/usr/bin/clang' \
+        -DCMAKE_C_FLAGS='-gdwarf-4 -fno-omit-frame-pointer -fsanitize=address,leak,undefined' \
+        -DCMAKE_INSTALL_PREFIX=pfx \
+        -DENABLE_CLI=ON \
+        -DENABLE_DAEMON=ON \
+        -DENABLE_GTK=OFF \
+        -DENABLE_MAC=OFF \
+        -DENABLE_QT=OFF \
+        -DENABLE_TESTS=OFF \
+        -DENABLE_UTILS=ON \
+        -DENABLE_WEB=ON \
+        -DRUN_CLANG_TIDY=ON .. \
+        && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. \
+        && make \
+        && make install \
+        && pwd && ls -al \
+        && checkinstall -y -D --pkgname transmission  --pakdir /var/tmp --pkgversion=${ver} \
+        ; fi
+
+#build from tagged version
+WORKDIR /var/tmp/transmission/
+COPY transmission-${TBT_VERSION}.tar.xz /var/tmp/transmission/
+#hadolint ignore=DL3003,DL3018,DL3008
+RUN set -x ;if [[ ${TBT_VERSION} =~ ^4 ]]; then \
+    URL=https://github.com/transmission/transmission/releases/download/${TBT_VERSION}/transmission-${TBT_VERSION}.tar.xz \
+    && echo "Fetching and building ${URL##*/} of transmission" \
+    && mkdir -p /var/tmp/transmission \
+    && if [[ ! -f /var/tmp/transmission/transmission-${TBT_VERSION}.tar.xz ]]; then curl -o /var/tmp/transmission/transmission-${TBT_VERSION}.tar.xz -Lv ${URL}; fi; \
+    #rm -Rf /var/tmp/transmission/* \
+    ls -al /var/tmp/transmission \
+    && tar -Jxf /var/tmp/transmission/transmission-${TBT_VERSION}.tar.xz -C /var/tmp/transmission/ --strip-components=1 \
+    && apt-get install -y --no-install-recommends libgtkmm-3.0-dev gettext qttools5-dev build-essential cmake libcurl4-openssl-dev libssl-dev gnupg \
+    && mkdir -p build && cd build \
+    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. \
+    && make \
+    && make install \
+    && echo "version: ${TBT_VERSION} / ${TBT_VERSION##*v}" \
+    && checkinstall -y -D --pkgname transmission  --pakdir /var/tmp --pkgversion="${TBT_VERSION}" --install=no; fi \
+    && ls -al /var/tmp
+
+
+FROM scratch AS exporting
+#hadolint ignore=DL3018,DL3008
+COPY --from=devbase /var/tmp/*.deb /root

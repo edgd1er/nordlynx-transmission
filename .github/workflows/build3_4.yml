@@ -12,7 +12,7 @@ on:
 
 env:
   tbt_version3: "3.00"
-  tbt_version4: "4.0.6"
+  tbt_version4: "4.1.0"
   tbt_versiond: "4.1.0"
   twcv: "1.6.33"
   ticv: "1.8.0"
@@ -87,6 +87,7 @@ jobs:
       twcv: ${{ needs.show_vars.outputs.twcv }}
       ticv: ${{ needs.show_vars.outputs.ticv }}
       push: 'true' #${{ needs.show_vars.outputs.push }}
+      deb: 0 # no deb built for trixie
     secrets: inherit
     needs:
       - getNordvpnVersions
@@ -104,15 +105,18 @@ jobs:
       ticv: ${{ needs.show_vars.outputs.ticv }}
       ptf: "linux/amd64,linux/arm64v8,linux/arm32/v7"
       push: 'true' #${{ needs.show_vars.outputs.push }}
+      deb: 1
     secrets: inherit
     needs:
       - getNordvpnVersions
       - show_vars
 
   build-v4dev-images:
+    if: false # disabled as of 26/02/01
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
+      base_image: 'ubuntu:24.04'
       tbt_version: "${{ needs.show_vars.outputs.tbt_versiond }}"
       tag: "dev"
       ptf: "linux/amd64,linux/arm64v8,linux/arm32/v7"
@@ -120,6 +124,7 @@ jobs:
       twcv: ${{ needs.show_vars.outputs.twcv }}
       ticv: ${{ needs.show_vars.outputs.ticv }}
       push: 'true' #${{ needs.show_vars.outputs.push }}
+      deb: 0
     secrets: inherit
     needs:
       - getNordvpnVersions

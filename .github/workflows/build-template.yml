@@ -47,6 +47,10 @@ on:
         required: false
         default: "1.8.0"
         type: string
+      deb:
+        required: false
+        default: 0
+        type: number
 
 jobs:
   build:
@@ -131,6 +135,7 @@ jobs:
             TICV=${{ inputs.ticv }}
             TZ=America/Chicago
             BASE_IMAGE=${{ inputs.base_image }}
+            DEB=${{ inputs.deb }}
           platforms: ${{ env.ptf }}
           provenance: false
           load: ${{ fromJSON(env.LOAD) }}
