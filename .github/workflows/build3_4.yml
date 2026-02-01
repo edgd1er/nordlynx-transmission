@@ -28,6 +28,8 @@ jobs:
       - name: checkout code
         uses: actions/checkout@v6
         id: step1
+        with:
+          lfs: true
       - name: get local nordvpn client version
         id: step2
         run: |
@@ -124,13 +126,14 @@ jobs:
       twcv: ${{ needs.show_vars.outputs.twcv }}
       ticv: ${{ needs.show_vars.outputs.ticv }}
       push: 'true' #${{ needs.show_vars.outputs.push }}
-      deb: 0
+      deb: 1
     secrets: inherit
     needs:
       - getNordvpnVersions
       - show_vars
 
   build-v4dev-images-ubuntu:
+    if: false # disabled as of 26/02/01
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
@@ -142,6 +145,7 @@ jobs:
       twcv: ${{ needs.show_vars.outputs.twcv }}
       ticv: ${{ needs.show_vars.outputs.ticv }}
       push: 'true' #${{ needs.show_vars.outputs.push }}
+      deb: 1
     secrets: inherit
     needs:
       - getNordvpnVersions

@@ -120,7 +120,7 @@ COPY out2/bookworm/transmission_${TBT_VERSION}*.deb /tmp/
 
 SHELL ["/bin/bash", "-o", "pipefail", "-xcu"]
 
-#hadolint ignore=DL3008,SC2046,SC2086
+#hadolint ignore=DL3008,SC2046,SC2086,DL3027
 RUN echo "cpu: ${TARGETPLATFORM}, os: ${BASE_IMAGE}, version: tbt: ${TBT_VERSION}, vpn: ${NORDVPN_VERSION}; debfiles: ${DEB}" \
     && ARCH="$(dpkg --print-architecture)" \
     && if [[ "dev" == "${TBT_VERSION}" ]]; then export TBT_VERSION=4.1; fi \
