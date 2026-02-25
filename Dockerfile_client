@@ -21,9 +21,9 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #hadolint ignore=DL3018,DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libcurl4-openssl-dev libssl-dev \
     pkg-config build-essential checkinstall wget tar zlib1g-dev intltool jq bash cmake g++ make python3 \
-    gettext libdeflate-dev libevent-dev libfmt-dev libminiupnpc-dev xz-utils \
+    gettext libdeflate-dev libevent-dev libfmt-dev libminiupnpc-dev xz-utils bash \
     libnatpmp-dev libpsl-dev ninja-build xz-utils clang-format clang clang-tidy git libclang-rt-19-dev \
-    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/${NVMVERSION}/install.sh | bash \
+    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVMVERSION}/install.sh | bash \
     && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" \
     && nvm install ${NODEVERSION} \
     && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*

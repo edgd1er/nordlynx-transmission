@@ -5,8 +5,6 @@
 #Variables
 localDir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 DKRFILE=${localDir}/Dockerfile
-#DKRFILE_CLIENT=${localDir}/Dockerfile_client_bookworm
-DKRFILE_CLIENT=${localDir}/Dockerfile_client
 ARCHI=$(dpkg --print-architecture)
 IMAGE=nordlynx-transmission
 DUSER=edgd1er
@@ -20,10 +18,16 @@ CACHE=""
 #CACHE="--no-cache"
 WHERE="--load"
 #TBT_VERSION=3.00
-#TBT_VERSION=4.0.6
-TBT_VERSION=4.1.0 #dev # 4.1.x
-NODEVERSION=20
-DEB=0
+#TBT_VERSION=4.0.6 #old bookworm
+TBT_VERSION=4.1.1
+#TBT_VERSION=dev # 4.2.x
+NODEVERSION=22
+DEB=1 # 0=from repo, 1=from .deb
+BASE_IMAGE=debian:13-slim\
+CODENAME=trixie
+
+BASE_IMAGE=ubuntu:24.04
+CODENAME=bookworm
 
 #exit on error
 set -e -u -o pipefail
@@ -51,7 +55,7 @@ case "${TBT_VERSION}" in
   dev)
     TAG="${DUSER}/${IMAGE}:dev"
     ;;
-  4.1.0)
+  4.1.1)
     TAG="${DUSER}/${IMAGE}:v4"
     ;;
   4.2.0)
@@ -97,25 +101,30 @@ while getopts "ah?vpc" opt; do
     fi
     ;;
   p)
-    echo "generating debian package for ${PTF} in ${TBT_VERSION} version"
+    DKRFILE_CLIENT=${localDir}/Dockerfile_client
+    if [ bookworm == ${CODENAME} ]; then DKRFILE_CLIENT=${localDir}/Dockerfile_client_bookworm ; fi
+    echo "generating debian package for ${PTF} in ${TBT_VERSION} version on ${CODENAME}, Dockerfile is $(basename ${DKRFILE_CLIENT})"
     #get transmission source if not present
     if [[ ! -f transmission-${TBT_VERSION}.tar.xz ]] && [[ "dev" != ${TBT_VERSION} ]]; then
       wget -O transmission-${TBT_VERSION}.tar.xz https://github.com/transmission/transmission/releases/download/${TBT_VERSION}/transmission-${TBT_VERSION}.tar.xz
     fi
     date
-    docker buildx build --builder=amd-arm --platform ${PTF} -f ${DKRFILE_CLIENT} $CACHE  \
-    --build-arg TBT_VERSION=$TBT_VERSION --build-arg NODEVERSION=$NODEVERSION --build-arg aptCacher=$aptCacher \
+    docker buildx build --builder=amd-arm --platform ${PTF} -f ${DKRFILE_CLIENT} $CACHE \
+    --build-arg BASE_IMAGE=${BASE_IMAGE} --build-arg CODENAME=$CODENAME \
+    --build-arg TBT_VERSION=$TBT_VERSION --build-arg NODEVERSION=$NODEVERSION  \
+    --build-arg aptCacher=$aptCacher \
     --progress $PROGRESS --provenance false -o out .
     find out/ -mindepth 2 -path "*linux_*" -type f -print -exec mv {} out/ \;
     date
     ;;
   c)
     #enable multi arch build framework
-    echo -e "building $TAG, name $NAME using cache $CACHE and apt cache $aptCacher for ${PTF} in ${TBT_VERSION}"
+    if [ bookworm == ${CODENAME} ]; then DKRFILE_CLIENT=${localDir}/Dockerfile_client_bookworm ; fi
+    echo -e "building $TAG, name $NAME using cache $CACHE and apt cache $aptCacher for ${PTF} in ${TBT_VERSION}, codename ${CODENAME}"
     #docker buildx use amd-arm
     docker buildx build --builder=amd-arm ${WHERE} --platform ${PTF} -f ${DKRFILE} $CACHE  \
       --build-arg TBT_VERSION=$TBT_VERSION --build-arg NODEVERSION=$NODEVERSION --build-arg aptCacher=$aptCacher \
-            --build-arg DEB=${DEB} --progress $PROGRESS --provenance false -t $TAG .
+      --build-arg CODENAME=${CODENAME} --build-arg DEB=${DEB} --progress $PROGRESS --provenance false -t $TAG .
     #done
     docker manifest inspect $TAG #| grep -E "architecture|variant"
     #docker manifest inspect $TAG | jq -r '.manifests[].platform|[.architecture,.os,.variant]| @tsv'

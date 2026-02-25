@@ -51,6 +51,10 @@ on:
         required: false
         default: 0
         type: number
+      codename:
+        required: false
+        default: bookworm
+        type: string
 
 jobs:
   build:
@@ -92,7 +96,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           version: latest
-          install: true
           use: true
       - name: Builder instance name
         run: echo ${{ steps.buildx.outputs.name }}
@@ -138,6 +141,7 @@ jobs:
             TZ=America/Chicago
             BASE_IMAGE=${{ inputs.base_image }}
             DEB=${{ inputs.deb }}
+            CODENAME=${{ inputs.codename }}
           platforms: ${{ env.ptf }}
           provenance: false
           load: ${{ fromJSON(env.LOAD) }}

@@ -12,8 +12,8 @@ on:
 
 env:
   tbt_version3: "3.00"
-  tbt_version4: "4.1.0"
-  tbt_versiond: "4.1.0"
+  tbt_version4: "4.1.1"
+  tbt_versiond: "4.1.1"
   twcv: "1.6.33"
   ticv: "1.8.0"
 

@@ -104,10 +104,11 @@ FROM os-base AS new
 
 ARG aptcacher=''
 ARG DEBIAN_FRONTEND=noninteractive
-ARG TBT_VERSION=4.1.0
+ARG TBT_VERSION=4.1.1
 ARG TARGETPLATFORM
 ARG BASE_IMAGE
 ARG DEB=0
+ARG CODENAME=trixie
 
 ENV TZ=${TZ:-Etc/UTC}
 ENV NORDVPNCLIENT_INSTALLED=${NORDVPNCLIENT_INSTALLED}
@@ -116,14 +117,14 @@ VOLUME /data
 VOLUME /config
 
 COPY --from=TransmissionUIs /opt/transmission-ui /opt/transmission-ui
-COPY out2/bookworm/transmission_${TBT_VERSION}*.deb /tmp/
+COPY out/${CODENAME}/transmission_${TBT_VERSION}*.deb /tmp/
 
 SHELL ["/bin/bash", "-o", "pipefail", "-xcu"]
 
 #hadolint ignore=DL3008,SC2046,SC2086,DL3027
 RUN echo "cpu: ${TARGETPLATFORM}, os: ${BASE_IMAGE}, version: tbt: ${TBT_VERSION}, vpn: ${NORDVPN_VERSION}; debfiles: ${DEB}" \
     && ARCH="$(dpkg --print-architecture)" \
-    && if [[ "dev" == "${TBT_VERSION}" ]]; then export TBT_VERSION=4.1; fi \
+    && if [[ "dev" == "${TBT_VERSION}" ]]; then export TBT_VERSION=4.2.0; fi \
     ; if [[ 0 -eq ${DEB} ]]; then echo "Installing transmission from repository: $( apt list transmission 2>/dev/null|grep ^trans)" \
     && apt-get update && apt-get install -y --no-install-recommends transmission-daemon transmission-cli \
     && ln -s /usr/share/transmission/web/style /opt/transmission-ui/transmission-web-control \

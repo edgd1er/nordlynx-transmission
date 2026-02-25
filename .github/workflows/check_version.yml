@@ -6,8 +6,8 @@ on:
 
 env:
   LIBEVENT_VERSION: 2.1.12-stable
-  TBT_VERSION: 4.1.0
-  TBT_DEV_VERSION: 4.1.0
+  TBT_VERSION: 4.1.1
+  TBT_DEV_VERSION: 4.2.0
   NORDVPN_PACKAGE: https://repo.nordvpn.com/deb/nordvpn/debian/dists/stable/main/binary-amd64/Packages
   TWCV: 1.6.1-update1
   TICV: 1.8.0
