@@ -8,14 +8,15 @@
 
 # nordlynx-transmission
 
-[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_4.4.0_amd64.changelog): 4.4.0 (21/11/25)
+[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_4.5.0_amd64.changelog): 4.5.0 (2026/03/17)
 
 Ubuntu based images do not require **privileged** mode, debian based images do.
 
-2025/12/XX: moving to debian trixie/13
-2024/11/18: nordvpn reorganized its repository and removed pre 3.17.0 versions. privileged mode is now required for the container.
-30/03/2024: --privileged required for client >= 3.17.0. problem stopping container with client 3.17.x. 
-26/06/2023: moving to debian bookworm/12.
+* 2026/02/25: transmission 4.1.1 by default.
+* 2025/12/XX: moving from debian bookworm to debian trixie/13
+* 2024/11/18: nordvpn reorganized its repository and removed pre 3.17.0 versions. privileged mode is now required for the container.
+* 30/03/2024: --privileged required for client >= 3.17.0. problem stopping container with client 3.17.x. 
+* 26/06/2023: moving to debian bookworm/12.
 
 /!\ please consider this project as a work in progress especially concerning iptables/leak management when not using nordvpn client (ie: NORDVPN_PRIVKEY found). 
 
@@ -82,7 +83,7 @@ sysclts:
   might be needed,  if nordvpn cannot change the settings itself.
 
 * ANALYTICS: [off/0/false, on/1/true], default on, send anonymous aggregate data: crash reports, OS version, marketing performance, and feature usage data
-* TECHNOLOGY: [NordLynx](https://support.nordvpn.com/hc/en-us/articles/19564565879441-What-is-NordLynx)/[OpenVPN](https://support.nordvpn.com/hc/en-us/articles/19683394.4.061-OpenVPN-connection-on-NordVPN)/[nordwhisper](https://nordvpn.com/blog/nordwhisper-protocol/), default: NordLynx (wireguard like)
+* TECHNOLOGY: [NordLynx](https://support.nordvpn.com/hc/en-us/articles/19564565879441-What-is-NordLynx)/[OpenVPN](https://support.nordvpn.com/hc/en-us/articles/19683394.5.061-OpenVPN-connection-on-NordVPN)/[nordwhisper](https://nordvpn.com/blog/nordwhisper-protocol/), default: NordLynx (wireguard like)
 * PROTOCOL=tcp # or udp (default), useful only when using openvpn. wireguard is udp only.
 * [OBFUSCATE](https://nordvpn.com/features/obfuscated-servers/): [off/on], default off, on hide vpn's use.
 * CONNECT = [country]/[server]/[country_code]/[city] or [country] [city],  if none provide you will connect to the recommended server.

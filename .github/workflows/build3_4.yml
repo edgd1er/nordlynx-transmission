@@ -83,6 +83,7 @@ jobs:
     with:
       build-context: '.'
       base_image: 'debian:13-slim'
+      codename: 'trixie'
       tbt_version: ${{ needs.show_vars.outputs.tbt_version4 }}
       tag: "v4"
       version: ${{ needs.show_vars.outputs.nversion }}
@@ -100,6 +101,7 @@ jobs:
     with:
       build-context: '.'
       base_image: 'ubuntu:24.04'
+      codename: 'bookworm'
       tbt_version: ${{ needs.show_vars.outputs.tbt_version4 }}
       tag: "v4"
       version: ${{ needs.show_vars.outputs.nversion }}
@@ -119,6 +121,7 @@ jobs:
     with:
       build-context: '.'
       base_image: 'ubuntu:24.04'
+      codename: 'bookworm'
       tbt_version: "${{ needs.show_vars.outputs.tbt_versiond }}"
       tag: "dev"
       ptf: "linux/amd64,linux/arm64v8,linux/arm32/v7"
@@ -138,6 +141,7 @@ jobs:
     with:
       build-context: '.'
       base_image: 'ubuntu:24.04'
+      codename: 'bookworm'
       tbt_version: "${{ needs.show_vars.outputs.tbt_versiond }}"
       tag: "dev"
       ptf: "linux/amd64,linux/arm64v8,linux/arm32/v7"
