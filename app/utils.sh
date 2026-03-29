@@ -185,7 +185,7 @@ generateTinyproxyConf() {
   INT_CIDR=$(getEthCidr)
 
   #Main
-  log "INFO: TINYPROXY: set configuration INT_IP: ${INT_IP}/ EXT_IP: ${EXT_IP} / log level: ${TINY_LOGLEVEL} / local network: ${LOCAL_NETWORK}"
+  log "INFO: TINYPROXY: set configuration INT_IP: ${INT_IP}/ EXT_IP: ${EXT_IP} / log level: ${TINY_LOGLEVEL} / local network: ${LOCAL_NETWORK:-''}"
   sed "s/TINYPORT/${TINYPORT}/" ${SOURCE_CONF} >${CONF}
   sed -i "s/TINY_LOGLEVEL/${TINY_LOGLEVEL}/" ${CONF}
   sed -i "s/#Listen .*/Listen ${INT_IP}/" ${CONF}

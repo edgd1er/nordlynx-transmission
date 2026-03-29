@@ -40,7 +40,7 @@ check [IP](https://bash.ws/my-ip),  [DNS](https://bash.ws/dnsleak),  [Torrent](h
 ## What is this?
 
 This image is a variation of nordlynx-proxy and has two ways to run.
-* the first one through nordvpn tooling using nordlynx. Nordvpn version of [wireguard](https://nordvpn.com/blog/wireguard-simplicity-efficiency/) is [nordlynx](https://nordvpn.com/blog/nordlynx-protocol-wireguard/). Login and password are required.
+* the first one through nordvpn tooling using nordlynx. Nordvpn version of [wireguard](https://nordvpn.com/blog/wireguard-simplicity-efficiency/) is [nordlynx](https://nordvpn.com/blog/nordlynx-protocol-wireguard/). [token](https://support.nordvpn.com/hc/en-us/articles/20286980309265-How-to-log-in-to-NordVPN-without-a-GUI-using-a-token) is required.
 * The second one through plain wireguard. Wireguard's private key will be needed. That key is exported when running in Nordlynx mode in /etc/wireguard/wg0.conf. No fancy feature like killswitch,  cybersec ... 
 
 you can then expose ports 
@@ -91,7 +91,7 @@ sysclts:
 * [GROUP](https://api.nordvpn.com/v1/servers/groups): Double VPN, Onion Over VPN, Ultra fast TV, Anti DDoS, Dedicated IP, Standard VPN servers, Netflix USA, P2P, Obfuscated Servers, Europe, The Americas, Asia Pacific, Africa,  the Middle East and India, Anycast DNS, Geo DNS, Grafana, Kapacitor, Socks5 Proxy, FastNetMon,  although many categories are possible,  p2p seems more adapted.
 * TECHNOLOGY: ikev2, openvpn_udp, openvpn_tcp, socks, proxy, pptp, l2tp, openvpn_xor_udp, openvpn_xor_tcp, proxy_cybersec, proxy_ssl, proxy_ssl_cybersec, ikev2_v6, openvpn_udp_v6, openvpn_tcp_v6, wireguard_udp, openvpn_udp_tls_crypt, openvpn_tcp_tls_crypt, openvpn_dedicated_udp, openvpn_dedicated_tcp, skylark, mesh_relay. `curl -LSs https://api.nordvpn.com/v1/technologies | jq '[.[].identifier] | @csv' | tr -d '\\"'`
 * CITY:  Tirana, Buenos Aires, Adelaide, Brisbane, Melbourne, Perth, Sydney, Vienna, Brussels, Sarajevo, Sao Paulo, Sofia, Montreal, Toronto, Vancouver, Santiago, San Jose, Zagreb, Nicosia, Prague, Copenhagen, Tallinn, Helsinki, Marseille, Paris, Tbilisi, Berlin, Frankfurt, Athens, Hong Kong, Budapest, Reykjavik, Mumbai, Jakarta, Dublin, Tel Aviv, Milan, Tokyo, Riga, Vilnius, Steinsel, Kuala Lumpur, Mexico, Chisinau, Amsterdam, Auckland, Skopje, Oslo, Warsaw, Lisbon, Bucharest, Belgrade, Singapore, Bratislava, Ljubljana, Johannesburg, Seoul, Madrid, Stockholm, Zurich, Taipei, Bangkok, Istanbul, Kyiv, Dubai, Edinburgh, Glasgow, London, Manchester, Atlanta, Buffalo, Charlotte, Chicago, Dallas, Denver, Kansas City, Los Angeles, Manassas, Miami, New York, Phoenix, Saint Louis, Salt Lake City, San Francisco, Seattle, Hanoi. `curl -LSs https://api.nordvpn.com/v1/servers/countries | jq '[.[].cities[].name ] | @csv' | tr -d '\\"'`
-* NORDVPN_TOKEN=<token> (As of 22/12/23, login with token should be preferred, as of 29/03/2026, it's required.username/password are not available anymore )
+* NORDVPN_TOKEN=<token> # login with token is required.
 * CYBER_SEC,  default off
 * KILLERSWITCH,  default on
 * DNS: change dns
@@ -117,7 +117,7 @@ see [haugene's poject](https://github.com/haugene/docker-transmission-openvpn) f
 Nordvpn, wireguard private key, transmission rpc and tinyproxy credentials may be available throught secrets (/run/secrets/nordvpn_creds, /run/secrets/tiny_creds)
 In the setup scripts, secrets values override any env values. Secrets names are fixed values: NORDVPN_CREDS, NORDVPN_PRIVKEY, RPC_CREDS, TINY_CREDS.
 
-file: ./nordvpn_creds #file with username/token in 1st line, passwd in 2nd line.
+file: ./nordvpn_creds #file with token in 1st line.
 file: ./tiny_creds #file with username/password in 1st line, passwd in 2nd line.
 these credentials can also be set with secrets.
 - NORDVPN_CREDS # nordvpn token
@@ -174,7 +174,7 @@ services:
 
 secrets:
     NORDVPN_CREDS:
-        file: ./nordvpn_creds # login and password on two separate lines, or token in oneline.
+        file: ./nordvpn_creds # token in oneline.
     NORDVPN_PRIVKEY:
         file: ./nordvpn_privkey # wireguard extracted private key
     RPC_CREDS:
