@@ -1,6 +1,7 @@
 .idea/**
 *_creds
+*_creds2
+nordvpn_privkey
 compose.yml
 your_config_path/
 your_storage_path/
-/nordvpn_privkey

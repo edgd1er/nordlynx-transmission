@@ -338,28 +338,20 @@ startNordVpn() {
   #Use secrets if present
   if [ -e /run/secrets/NORDVPN_CREDS ]; then
     mapfile -t -n 2 vars </run/secrets/NORDVPN_CREDS
+    NORDVPN_TOKEN=${vars[0]}
     if [[ ${#vars[*]} -eq 2 ]]; then
-      NORDVPN_LOGIN=${vars[0]}
-      NORDVPN_PASS=${vars[1]}
-    elif [[ ${#vars[*]} -eq 1 ]]; then
-      log "WARNING: Only one line found, assuming token."
-      NORDVPN_LOGIN=${vars[0]}
-      NORDVPN_PASS=''
+      log "WARNING: Two lines found, using line 1 as token, second line is discarded."
     fi
   fi
 
-  if [[ -z ${NORDVPN_LOGIN:-''} ]]; then
+  if [[ -z ${NORDVPN_TOKEN:-''} ]]; then
     log "ERROR: NORDVPN: **********************"
-    log "ERROR: NORDVPN: empty user or token   "
+    log "ERROR: NORDVPN: empty token   "
     log "ERROR: NORDVPN: **********************"
     exit 1
   fi
 
-  if [[ -z ${NORDVPN_PASS:-''} ]]; then
-    logincmd="login --token ${NORDVPN_LOGIN}"
-  else
-    logincmd="login --username ${NORDVPN_LOGIN} --password ${NORDVPN_PASS}"
-  fi
+  logincmd="login --token ${NORDVPN_TOKEN}"
 
   # login: already logged in return 1
   res="$(nordvpn ${logincmd})" || true

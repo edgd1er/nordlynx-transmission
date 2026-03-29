@@ -19,8 +19,7 @@ services:
       - GROUP=P2P
       - CYBER_SEC=off
       - DEBUG=false
-      - NORDVPN_LOGIN=<email> #Not required if using secrets
-      - NORDVPN_PASS=<pass> #Not required if using secrets
+      - NORDVPN_TOKEN=<TOKEN> #Not required if using secrets
       - ANALYTICS=off # or on, sending anonymous aggregate data: crash reports, OS version, marketing performance, and feature usage data
       - TECHNOLOGY=NordLynx #openvpn or nordlynx
       - PROTOCOL=tcp # or udp (default), useful only when using openvpn. wireguard is udp only.
