@@ -19,15 +19,15 @@ CACHE=""
 WHERE="--load"
 #TBT_VERSION=3.00
 #TBT_VERSION=4.0.6 #old bookworm
-TBT_VERSION=4.1.1
+TBT_VERSION=4.1.2
 #TBT_VERSION=dev # 4.2.x
-NODEVERSION=22
+NODEVERSION=24
 DEB=1 # 0=from repo, 1=from .deb
-BASE_IMAGE=debian:13-slim\
-CODENAME=trixie
+#BASE_IMAGE=debian:13-slim\
+#CODENAME=trixie
 
-BASE_IMAGE=ubuntu:24.04
-CODENAME=bookworm
+BASE_IMAGE=ubuntu:26.04
+CODENAME=resolute
 
 #exit on error
 set -e -u -o pipefail
@@ -55,7 +55,7 @@ case "${TBT_VERSION}" in
   dev)
     TAG="${DUSER}/${IMAGE}:dev"
     ;;
-  4.1.1)
+  4.1.2)
     TAG="${DUSER}/${IMAGE}:v4"
     ;;
   4.2.0)
@@ -119,7 +119,7 @@ while getopts "ah?vpc" opt; do
     ;;
   c)
     #enable multi arch build framework
-    if [ bookworm == ${CODENAME} ]; then DKRFILE_CLIENT=${localDir}/Dockerfile_client_bookworm ; fi
+    if [[ ${CODENAME} =~ bookworm ]]; then DKRFILE_CLIENT=${localDir}/Dockerfile_client_bookworm ; fi
     echo -e "building $TAG, name $NAME using cache $CACHE and apt cache $aptCacher for ${PTF} in ${TBT_VERSION}, codename ${CODENAME}"
     #docker buildx use amd-arm
     docker buildx build --builder=amd-arm ${WHERE} --platform ${PTF} -f ${DKRFILE} $CACHE  \

@@ -16,7 +16,7 @@ RUN  if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcac
 FROM base AS devbase
 ARG TBT_VERSION=3.00
 ARG LIBEVENT_VERSION=2.1.12-stable
-ARG NODEVERSION=20
+ARG NODEVERSION=24
 ARG NVMVERSION=v0.40.4
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #hadolint ignore=DL3018,DL3008
