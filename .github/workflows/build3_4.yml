@@ -13,7 +13,7 @@ on:
 env:
   tbt_version3: "3.00"
   tbt_version4: "4.1.2"
-  tbt_versiond: "4.1.2"
+  tbt_versiond: "4.2.0"
   twcv: "1.6.33"
   ticv: "1.8.0"
 
@@ -100,8 +100,8 @@ jobs:
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
-      base_image: 'ubuntu:24.04'
-      codename: 'bookworm'
+      base_image: 'ubuntu:26.04'
+      codename: 'resolute'
       tbt_version: ${{ needs.show_vars.outputs.tbt_version4 }}
       tag: "v4"
       version: ${{ needs.show_vars.outputs.nversion }}
@@ -120,8 +120,8 @@ jobs:
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
-      base_image: 'ubuntu:24.04'
-      codename: 'bookworm'
+      base_image: 'ubuntu:26.04'
+      codename: 'resolute'
       tbt_version: "${{ needs.show_vars.outputs.tbt_versiond }}"
       tag: "dev"
       ptf: "linux/amd64,linux/arm64v8,linux/arm32/v7"

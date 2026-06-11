@@ -1,39 +1,39 @@
-
-#FROM debian:bullseye-slim as base
 ARG OSVER=26.04
 FROM ubuntu:${OSVER} AS base
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #hadolint ignore=DL3008
 RUN  if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
-    apt-get update && apt-get install -y --no-install-recommends software-properties-common \
-    && apt-add-repository contrib non-free && apt-get update && apt-get install -y --no-install-recommends \
-    dumb-init openvpn privoxy procps socat libevent-2.1-7 libnatpmp1 libminiupnpc17 \
+    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends \
+    dumb-init openvpn privoxy procps socat libevent-2.1-7t64 libnatpmp1t64 libminiupnpc21 \
     tzdata dnsutils iputils-ping ufw openssh-client git jq curl wget unzip bc libdeflate0 \
     unrar-free \
     #libclang-common-15-dev unrar-free \
     && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
 
 FROM base AS devbase
-ARG TBT_VERSION=3.00
+ARG TBT_VERSION=4.1.2
 ARG LIBEVENT_VERSION=2.1.12-stable
 ARG NODEVERSION=24
-ARG NVMVERSION=v0.40.4
+ARG NVMVERSION=0.40.4
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #hadolint ignore=DL3018,DL3008
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libcurl4-openssl-dev libssl-dev \
+RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
+        echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
+    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates libcurl4-openssl-dev libssl-dev \
     pkg-config build-essential checkinstall wget tar zlib1g-dev intltool jq bash cmake g++ make python3 \
-    gettext libdeflate-dev libevent-dev libfmt-dev libminiupnpc-dev xz-utils \
-    libnatpmp-dev libpsl-dev ninja-build xz-utils clang-format clang clang-tidy git libclang-rt-14-dev \
-    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/${NVMVERSION}/install.sh | bash \
+    gettext libdeflate-dev libevent-dev libfmt-dev libminiupnpc-dev xz-utils bash \
+    libnatpmp-dev libpsl-dev ninja-build xz-utils clang-format clang clang-tidy git libclang-rt-19-dev
+RUN if [[ "i" == "i" ]]; then apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nodejs npm ;\
+    else curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVMVERSION}/install.sh | bash \
     && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" \
     && nvm install ${NODEVERSION} \
-    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/* ; fi
 
 WORKDIR /var/tmp/
 #hadolint ignore=DL3003,DL3008
-RUN if [[ "dev" == "${TBT_VERSION}" ]]; then apt-get update \
-    && echo "Fetching and building ${TBT_VERSION} of transmission" \
+RUN if [[ "dev" == "${TBT_VERSION}" ]]; then \
+    echo "Fetching and building ${TBT_VERSION} of transmission" \
     && git clone --depth 1 --branch main https://github.com/transmission/transmission \
     && cd transmission \
     && ver=$(grep -oP "(?<=TR_VERSION_(MAJOR|MINOR|PATCH) \")[^\"]+" CMakeLists.txt | tr '\n' '.' | grep -oP "[0-9]+\.[0-9]+\.[0-9]+") \
@@ -43,7 +43,7 @@ RUN if [[ "dev" == "${TBT_VERSION}" ]]; then apt-get update \
         -DCMAKE_CXX_FLAGS='-gdwarf-4 -fno-omit-frame-pointer -fsanitize=address,leak,undefined' \
         -DCMAKE_C_COMPILER='/usr/bin/clang' -DCMAKE_C_FLAGS='-gdwarf-4 -fno-omit-frame-pointer -fsanitize=address,leak,undefined' \
         -DCMAKE_INSTALL_PREFIX=pfx -DENABLE_CLI=ON -DENABLE_DAEMON=ON -DENABLE_GTK=OFF -DENABLE_MAC=OFF -DENABLE_QT=OFF -DENABLE_TESTS=ON \
-        -DENABLE_UTILS=ON -DENABLE_WEB=ON -DRUN_CLANG_TIDY=OFF .. \
+        -DENABLE_UTILS=ON -DENABLE_WEB=ON -DRUN_CLANG_TIDY=ON .. \
         && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. \
         && make \
         && make install \
@@ -64,11 +64,11 @@ RUN if [[ ${TBT_VERSION} =~ ^4 ]]; then \
     && tar -Jxf /var/tmp/transmission/transmission-${TBT_VERSION}.tar.xz -C /var/tmp/transmission/ --strip-components=1 \
     && ls -al /var/tmp/transmission \
     && apt-get update && apt-get install -y --no-install-recommends libgtkmm-3.0-dev gettext qttools5-dev build-essential cmake libcurl4-openssl-dev libssl-dev gnupg \
-    && apt-get remove -y clang-tidy clang-tools\
+    # && apt-get remove -y clang-tidy clang-tools \
     && mkdir -p build && cd build \
     && ls -al .. \
     && pwd \
-    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DTRANSMISSION_ENABLE_CLANG_TIDY=OFF -DCMAKE_CXX_CLANG_TIDY="" -DCMAKE_C_CLANG_TIDY="" .. \
+    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DTRANSMISSION_ENABLE_CLANG_TIDY=OFF -DCMAKE_CXX_CLANG_TIDY="" -DCMAKE_C_CLANG_TIDY="" .. \
     && make \
     && make install \
     && echo "version: ${TBT_VERSION} / ${TBT_VERSION##*v}" \

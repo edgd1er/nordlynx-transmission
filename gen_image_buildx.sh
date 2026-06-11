@@ -102,7 +102,8 @@ while getopts "ah?vpc" opt; do
     ;;
   p)
     DKRFILE_CLIENT=${localDir}/Dockerfile_client
-    if [ bookworm == ${CODENAME} ]; then DKRFILE_CLIENT=${localDir}/Dockerfile_client_bookworm ; fi
+    if [[ -n ${CODENAME} ]]; then DKRFILE_CLIENT=${localDir}/Dockerfile_client_${CODENAME} ; fi
+    [[ ! -f ${D}KRFILE_CLIENT} ]] && echo "${DKRFILE_CLIENT} no found. Exiting" && exit || true \
     echo "generating debian package for ${PTF} in ${TBT_VERSION} version on ${CODENAME}, Dockerfile is $(basename ${DKRFILE_CLIENT})"
     #get transmission source if not present
     if [[ ! -f transmission-${TBT_VERSION}.tar.xz ]] && [[ "dev" != ${TBT_VERSION} ]]; then

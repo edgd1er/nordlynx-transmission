@@ -12,7 +12,8 @@
 
 Ubuntu based images do not require **privileged** mode, debian based images do.
 
-* 2026/06/04: transmission 4.1.2 by default.
+
+* 2026/06/04: transmission 4.1.2 by default. moving from noble to resolute.
 * 2026/02/25: transmission 4.1.1 by default.
 * 2025/12/XX: moving from debian bookworm to debian trixie/13
 * 2024/11/18: nordvpn reorganized its repository and removed pre 3.17.0 versions. privileged mode is now required for the container.

@@ -3,32 +3,20 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #hadolint ignore=DL3008,DL3009
 RUN  if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
-  ls -al /etc/apt/sources.list.d \
-#  && echo -e """Types: deb \n\
-#URIs: https://deb.debian.org/debian \n\
-#Suites: trixie trixie-updates \n\
-#Components: main contrib non-free non-free-firmware \n\
-#Enabled: yes \n\
-#Signed-By: /usr/share/keyrings/debian-archive-keyring.pgp \n\
-#\n\
-#Types: deb \n\
-#URIs: https://security.debian.org/debian-security \n\
-#Suites: trixie-security \n\
-#Components: main contrib non-free non-free-firmware \n\
-#Enabled: yes \n\
-#Signed-By: /usr/share/keyrings/debian-archive-keyring.pgp""" >/etc/apt/sources.list.d/debian2.sources \
+    ls -al /etc/apt/sources.list.d \
     && cat /etc/apt/sources.list.d/debian.sources \
     && ls -al /etc/apt/sources.list.d
-    # apt-add-repository non-free
 RUN cat /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get update && apt-get install -y --no-install-recommends \
-    dumb-init openvpn privoxy procps socat libevent-2.1-7 libnatpmp1 libminiupnpc18 \
+    dumb-init openvpn privoxy procps socat libevent-2.1-7t64 libnatpmp1t64 libminiupnpc18 \
     tzdata dnsutils iputils-ping ufw openssh-client git jq curl wget unrar-free unzip bc libdeflate0
-    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash \
+RUN if [[ "i" == "i" ]]; then apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nodejs npm ;\
+    else curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVMVERSION}/install.sh | bash \
+    && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" \
     && nvm install ${NODEVERSION} \
-    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/* ; fi
 
 FROM base AS devbase
-ARG TBT_VERSION=4.1s
+ARG TBT_VERSION=4.1.2
 ARG LIBEVENT_VERSION=2.1.12-stable
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #hadolint ignore=DL3018,DL3008

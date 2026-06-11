@@ -34,8 +34,9 @@ on:
         type: string
       version:
         required: false
-        default: "4.3.1"
+        default: "4.5.0"
         type: string
+        description: Nordvpn client version
       tbt_version:
         required: true
         type: string
@@ -43,18 +44,22 @@ on:
         required: false
         default: "1.6.33"
         type: string
+        description: Transmission web control
       ticv:
         required: false
         default: "1.8.0"
         type: string
+        description: "Transmissionic"
       deb:
         required: false
         default: 0
         type: number
+        description: "0 install transmission from apt, 1 from local deb files"
       codename:
         required: false
-        default: bookworm
+        default: resolute
         type: string
+        description: "OS codename, 13=trixie, 26.04=resolute, 12=bookworm, 24.04=Noble"
 
 jobs:
   build:

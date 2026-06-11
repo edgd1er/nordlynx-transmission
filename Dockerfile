@@ -63,21 +63,22 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #add apt-cacher setting if present:
 WORKDIR /app
 #hadolint ignore=DL3018,DL3008,SC2086
-RUN if [[ -n "${aptcacher}" ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
+RUN if [[ -n "${aptcacher:-}" ]]; then echo "Acquire::http::Proxy \"http://${aptcacher}:3142\";" >/etc/apt/apt.conf.d/01proxy; \
     echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
-    # allow to install resolvconf \
+    # allow to install resolvconf
     echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
-    # trixie backports \
-    && if [[ "${BASE_IMAGE}" =~ (trixie|13) ]]; then echo -e "Types: deb deb-src\nURIs: http://deb.debian.org/debian\nSuites: trixie-backports\nComponents: main contrib non-free non-free-firmware\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\nEnabled: yes">/etc/apt/sources.list.d/trixie-backports.sources /etc/apt/sources.list \
-    && echo -e "Types: deb deb-src\nURIs: http://deb.debian.org/debian\nSuites: forky\nComponents: main contrib non-free non-free-firmware\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\nEnabled: yes">/etc/apt/sources.list.d/debian-testing.sources ; TB=1 ; UNP=18 \
-    && cat /etc/apt/sources.list.d/debian-testing.sources ; else TB=0 ; UNP=17; fi \
-    && apt-get update && export DEBIAN_FRONTEND=non-interactive && apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy supervisor wget curl jq \
-    ca-certificates tzdata net-tools unzip unrar-free bc tar bash dnsutils tinyproxy ufw iputils-ping vim libdeflate0 libevent-2.1-7 libnatpmp1 libminiupnpc${UNP} \
-    # wireguard \
+    # libminiunpc version for 12/bookworm/2024.04/b + TB
+    && TB="" ; UNP=17; LIBASSUAN=0 && \
+    if [[ ${BASE_IMAGE} =~ 26 ]];then UNP=21 ; LIBASSUAN=9 ; \
+    elif [[ ${BASE_IMAGE} =~ 13 ]];then TB="-t trixie-backports"; UNP=18 ; LIBASSUAN=9 \
+    && echo -e "Types: deb deb-src\nURIs: http://deb.debian.org/debian\nSuites: forky\nComponents: main contrib non-free non-free-firmware\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\nEnabled: yes">/etc/apt/sources.list.d/debian-testing.sources \
+    && cat /etc/apt/sources.list.d/debian-testing.sources ; fi \
+    && echo "BASE: ${BASE_IMAGE}, assuan: ${LIBASSUAN}, unp: ${UNP},trixie backports: ${TB}" \
+    && apt-get update && DEBIAN_FRONTEND=non-interactive apt-get -o Dpkg::Options::="--force-confold" install \
+    --no-install-recommends -qqy supervisor wget curl jq ca-certificates tzdata net-tools unzip unrar-free bc tar bash \
+    dnsutils tinyproxy ufw iputils-ping vim libdeflate0 libevent-2.1-7 libnatpmp1 libminiupnpc${UNP} libassuan${LIBASSUAN} \
     wireguard-tools \
-    && echo "BASE: ${BASE_IMAGE}, ${UNP}, ${TB}" \
-    && [[ 1 -eq ${TB} ]] && apt-get install -t trixie-backports --no-install-recommends -y dante-server libassuan9 e2fsprogs || \
-    apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy dante-server libassuan0 \
+    && apt-get install --no-install-recommends -y ${TB} dante-server e2fsprogs \
     #ui start \
     && if [[ 1 -eq ${NORDVPNCLIENT_INSTALLED} ]]; then \
     apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy \
