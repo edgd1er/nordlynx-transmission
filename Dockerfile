@@ -68,24 +68,29 @@ RUN if [[ -n "${aptcacher:-}" ]]; then echo "Acquire::http::Proxy \"http://${apt
     # allow to install resolvconf
     echo "resolvconf resolvconf/linkify-resolvconf boolean false" | debconf-set-selections \
     # libminiunpc version for 12/bookworm/2024.04/b + TB
-    && TB="" ; UNP=17; LIBASSUAN=0 && \
+    && TB="" ; UNP=17; LIBASSUAN=0 && DANTE="dante-server" ; \
     if [[ ${BASE_IMAGE} =~ 26 ]];then UNP=21 ; LIBASSUAN=9 ; \
-    elif [[ ${BASE_IMAGE} =~ 13 ]];then TB="-t trixie-backports"; UNP=18 ; LIBASSUAN=9 \
-    && echo -e "Types: deb deb-src\nURIs: http://deb.debian.org/debian\nSuites: forky\nComponents: main contrib non-free non-free-firmware\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\nEnabled: yes">/etc/apt/sources.list.d/debian-testing.sources \
+    elif [[ ${BASE_IMAGE} =~ 13 ]];then TB="-t trixie-backports"; UNP=18 ; LIBASSUAN=9 ; DANTE="" \
+    && echo -e "Types: deb deb-src\nURIs: http://deb.debian.org/debian\nSuites: trixie-backports\n\
+Components: main contrib non-free non-free-firmware\n\
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg\n\
+Enabled: yes" >/etc/apt/sources.list.d/debian-testing.sources \
     && cat /etc/apt/sources.list.d/debian-testing.sources ; fi \
     && echo "BASE: ${BASE_IMAGE}, assuan: ${LIBASSUAN}, unp: ${UNP},trixie backports: ${TB}" \
     && apt-get update && DEBIAN_FRONTEND=non-interactive apt-get -o Dpkg::Options::="--force-confold" install \
     --no-install-recommends -qqy supervisor wget curl jq ca-certificates tzdata net-tools unzip unrar-free bc tar bash \
     dnsutils tinyproxy ufw iputils-ping vim libdeflate0 libevent-2.1-7 libnatpmp1 libminiupnpc${UNP} libassuan${LIBASSUAN} \
-    wireguard-tools \
-    && apt-get install --no-install-recommends -y ${TB} dante-server e2fsprogs \
+    wireguard-tools libwrap0 \
+    && apt-get install --no-install-recommends -y ${TB} e2fsprogs ${DANTE} \
+    && if [ -z ${DANTE} ]; then wget -q http://ftp.us.debian.org/debian/pool/main/d/dante/dante-server_1.4.2+dfsg-7+b8_amd64.deb \
+    -O dante-server && dpkg -i ./dante-server ; fi \
     #ui start \
     && if [[ 1 -eq ${NORDVPNCLIENT_INSTALLED} ]]; then \
     apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy \
     # nordvpn requirements \
     iproute2 iptables readline-common dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client \
     gpg-wks-server gpgconf gpgsm libksba8 libnpth0 libreadline8 libsqlite3-0 lsb-base pinentry-curses; fi \
-    && wget -nv -t10 -O /tmp/nordrepo.deb  "https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/n/nordvpn-release/nordvpn-release_1.0.0_all.deb" \
+    && wget -nv -t10 -O /tmp/nordrepo.deb "https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/n/nordvpn-release/nordvpn-release_1.0.0_all.deb" \
     && apt-get install -qqy --no-install-recommends /tmp/nordrepo.deb && apt-get update \
     && apt-get install -qqy --no-install-recommends -y nordvpn="${VERSION}" \
     #&& apt-get remove -y wget nordvpn-release \
