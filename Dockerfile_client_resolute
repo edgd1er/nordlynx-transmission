@@ -22,8 +22,8 @@ RUN if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcach
         echo "Acquire::https::Proxy \"http://${aptcacher}:3142\";" >>/etc/apt/apt.conf.d/01proxy ; fi; \
     apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates libcurl4-openssl-dev libssl-dev \
     pkg-config build-essential checkinstall wget tar zlib1g-dev intltool jq bash cmake g++ make python3 \
-    gettext libdeflate-dev libevent-dev libfmt-dev libminiupnpc-dev xz-utils bash \
-    libnatpmp-dev libpsl-dev ninja-build xz-utils clang-format clang clang-tidy git libclang-rt-19-dev
+    gettext libdeflate-dev libevent-dev libfmt-dev libminiupnpc-dev xz-utils bash git \
+    libnatpmp-dev libpsl-dev ninja-build xz-utils clang-format clang clang-tidy llvm libclang-common-21-dev libclang-rt-21-dev
 RUN if [[ "i" == "i" ]]; then apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nodejs npm ;\
     else curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVMVERSION}/install.sh | bash \
     && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" \
