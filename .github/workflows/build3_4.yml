@@ -12,7 +12,7 @@ on:
 
 env:
   tbt_version3: "3.00"
-  tbt_version4: "4.1.2"
+  tbt_version4: "4.1.3"
   tbt_versiond: "4.2.0"
   twcv: "1.6.33"
   ticv: "1.8.0"
@@ -50,6 +50,7 @@ jobs:
     outputs:
       tbt_version3: ${{ env.tbt_version3 }}
       tbt_version4: ${{ env.tbt_version4 }}
+      tbt_versiond: ${{ env.tbt_versiond }}
       nversion: ${{ needs.getNordvpnVersions.outputs.VERSION }}
       twcv: ${{ env.twcv }}
       ticv: ${{ env.ticv }}
@@ -57,7 +58,7 @@ jobs:
     steps:
       - name: "show vars"
         run: |
-          echo "TBT_VERSION3=${tbt_version3},TBT_VERSION4=${tbt_version4}, VERSION=${VERSION}, TWCV=${twcv}, TICV=${ticv},push=${push}"
+          echo "TBT_VERSION3=${tbt_version3},TBT_VERSION4=${tbt_version4}, TBT_VERSIOND=${tbt_versiond},VERSION=${VERSION}, TWCV=${twcv}, TICV=${ticv},push=${push}"
           echo "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
 
@@ -140,8 +141,8 @@ jobs:
     uses: ./.github/workflows/build-template.yml
     with:
       build-context: '.'
-      base_image: 'ubuntu:24.04'
-      codename: 'bookworm'
+      base_image: 'ubuntu:26.04'
+      codename: 'resolute'
       tbt_version: "${{ needs.show_vars.outputs.tbt_versiond }}"
       tag: "dev"
       ptf: "linux/amd64,linux/arm64v8,linux/arm32/v7"

@@ -12,7 +12,7 @@ RUN  if [[ -n ${aptcacher} ]]; then echo "Acquire::http::Proxy \"http://${aptcac
     && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
 
 FROM base AS devbase
-ARG TBT_VERSION=4.1.2
+ARG TBT_VERSION=4.1.3
 ARG LIBEVENT_VERSION=2.1.12-stable
 ARG NODEVERSION=24
 ARG NVMVERSION=0.40.4

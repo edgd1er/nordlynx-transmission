@@ -16,7 +16,7 @@ RUN if [[ "i" == "i" ]]; then apt-get update && DEBIAN_FRONTEND=noninteractive a
     && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/* ; fi
 
 FROM base AS devbase
-ARG TBT_VERSION=4.1.2
+ARG TBT_VERSION=4.1.3
 ARG LIBEVENT_VERSION=2.1.12-stable
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #hadolint ignore=DL3018,DL3008
@@ -85,4 +85,4 @@ RUN set -x ;if [[ ${TBT_VERSION} =~ ^4 ]]; then \
 
 FROM scratch AS exporting
 #hadolint ignore=DL3018,DL3008
-COPY --from=devbase /var/tmp/*.deb /root
+COPY --from=devbase /var/tmp/*.deb /

@@ -60,8 +60,9 @@ check:	## check versions
 	echo "transmissionic version: ${TICV}" ; \
 	sed -i -E "s/ verTC=.*/ verTC=${TICV}/" Dockerfile; \
 	sed -i -E "s/ nversion: \".*/ nversion: \"$${rversion}\"/" .github/workflows/build3_4.yml; \
-	sed -i -E "s/$${lversion}/$${rversion}/g" README.md;
-
+	sed -i -E "s/$${lversion}/$${rversion}/g" README.md; \
+	tver=$$(curl -s "https://api.github.com/repos/transmission/transmission/releases/latest" | jq -r .tag_name) && \
+	echo "Transmission: ${TBT_V4} / $${tver}"
 run:
 	@echo "run container"
 	docker-compose up

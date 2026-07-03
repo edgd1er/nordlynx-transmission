@@ -19,15 +19,17 @@ CACHE=""
 WHERE="--load"
 #TBT_VERSION=3.00
 #TBT_VERSION=4.0.6 #old bookworm
-TBT_VERSION=4.1.2
+TBT_VERSION=4.1.3
 #TBT_VERSION=dev # 4.2.x
 NODEVERSION=24
 DEB=1 # 0=from repo, 1=from .deb
-#BASE_IMAGE=debian:13-slim\
-#CODENAME=trixie
-
-BASE_IMAGE=ubuntu:26.04
-CODENAME=resolute
+if [[ 1 -eq 1 ]]; then
+  BASE_IMAGE=debian:13-slim
+  CODENAME=trixie
+else
+  BASE_IMAGE=ubuntu:26.04
+  CODENAME=resolute
+fi
 
 #exit on error
 set -e -u -o pipefail
@@ -55,7 +57,7 @@ case "${TBT_VERSION}" in
   dev)
     TAG="${DUSER}/${IMAGE}:dev"
     ;;
-  4.1.2)
+  4.1.2|4.1.3)
     TAG="${DUSER}/${IMAGE}:v4"
     ;;
   4.2.0)
@@ -103,7 +105,7 @@ while getopts "ah?vpc" opt; do
   p)
     DKRFILE_CLIENT=${localDir}/Dockerfile_client
     if [[ -n ${CODENAME} ]]; then DKRFILE_CLIENT=${localDir}/Dockerfile_client_${CODENAME} ; fi
-    [[ ! -f ${D}KRFILE_CLIENT} ]] && echo "${DKRFILE_CLIENT} no found. Exiting" && exit || true \
+    [[ ! -f ${DKRFILE_CLIENT} ]] && echo "${DKRFILE_CLIENT} no found. Exiting" && exit || true ;\
     echo "generating debian package for ${PTF} in ${TBT_VERSION} version on ${CODENAME}, Dockerfile is $(basename ${DKRFILE_CLIENT})"
     #get transmission source if not present
     if [[ ! -f transmission-${TBT_VERSION}.tar.xz ]] && [[ "dev" != ${TBT_VERSION} ]]; then

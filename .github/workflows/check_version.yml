@@ -5,8 +5,8 @@ on:
   workflow_dispatch:
 
 env:
-  LIBEVENT_VERSION: 2.1.12-stable
-  TBT_VERSION: 4.1.2
+  LIBEVENT_VERSION: 2.1.13-stable
+  TBT_VERSION: 4.1.3
   TBT_DEV_VERSION: 4.2.0
   NORDVPN_PACKAGE: https://repo.nordvpn.com/deb/nordvpn/debian/dists/stable/main/binary-amd64/Packages
   TWCV: 1.6.1-update1

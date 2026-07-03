@@ -8,12 +8,12 @@
 
 # nordlynx-transmission
 
-[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_5.1.0_amd64.changelog): 5.1.0 (2026/06/15)
+[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_5.2.0_amd64.changelog): 5.2.0 (2026/07/03)
 
 Ubuntu based images do not require **privileged** mode, debian based images do.
 
-
-* 2026/06/04: transmission 4.1.2 by default. moving from noble to resolute.
+* 2026/07/03: transmission 4.1.3 by default.
+* 2026/06/04: transmission 4.1.2 by default. Moving from noble to resolute.
 * 2026/02/25: transmission 4.1.1 by default.
 * 2025/12/XX: moving from debian bookworm to debian trixie/13
 * 2024/11/18: nordvpn reorganized its repository and removed pre 3.17.0 versions. privileged mode is now required for the container.
@@ -85,7 +85,7 @@ sysclts:
   might be needed,  if nordvpn cannot change the settings itself.
 
 * ANALYTICS: [off/0/false, on/1/true], default on, send anonymous aggregate data: crash reports, OS version, marketing performance, and feature usage data
-* TECHNOLOGY: [NordLynx](https://support.nordvpn.com/hc/en-us/articles/19564565879441-What-is-NordLynx)/[OpenVPN](https://support.nordvpn.com/hc/en-us/articles/19683395.1.061-OpenVPN-connection-on-NordVPN)/[nordwhisper](https://nordvpn.com/blog/nordwhisper-protocol/), default: NordLynx (wireguard like)
+* TECHNOLOGY: [NordLynx](https://support.nordvpn.com/hc/en-us/articles/19564565879441-What-is-NordLynx)/[OpenVPN](https://support.nordvpn.com/hc/en-us/articles/19683395.2.061-OpenVPN-connection-on-NordVPN)/[nordwhisper](https://nordvpn.com/blog/nordwhisper-protocol/), default: NordLynx (wireguard like)
 * PROTOCOL=tcp # or udp (default), useful only when using openvpn. wireguard is udp only.
 * [OBFUSCATE](https://nordvpn.com/features/obfuscated-servers/): [off/on], default off, on hide vpn's use.
 * CONNECT = [country]/[server]/[country_code]/[city] or [country] [city],  if none provide you will connect to the recommended server.

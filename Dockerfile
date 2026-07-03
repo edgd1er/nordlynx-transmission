@@ -38,7 +38,7 @@ ADD transmission_web_control_1.6.33.tar.xz /opt/transmission-ui/
 FROM $BASE_IMAGE AS os-base
 
 ARG aptcacher=''
-ARG VERSION=5.1.0
+ARG VERSION=5.2.0
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 ARG BASE_IMAGE
@@ -110,7 +110,7 @@ FROM os-base AS new
 
 ARG aptcacher=''
 ARG DEBIAN_FRONTEND=noninteractive
-ARG TBT_VERSION=4.1.2
+ARG TBT_VERSION=4.1.3
 ARG TARGETPLATFORM
 ARG BASE_IMAGE
 ARG DEB=0
