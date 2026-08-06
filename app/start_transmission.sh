@@ -92,10 +92,10 @@ mkdir -p ${TRANSMISSION_HOME}
 case ${TRANSMISSION_LOG_LEVEL,,} in
 "trace" | "debug" | "info" | "warn" | "error" | "critical")
   echo "Will exec Transmission with '--log-level=${TRANSMISSION_LOG_LEVEL,,}' argument"
-  export TRANSMISSION_LOGGING="--log-level=${TRANSMISSION_LOG_LEVEL,,}"
+  export TRANSMISSION_LOGGING_LEVEL="${TRANSMISSION_LOG_LEVEL,,}"
   ;;
 *)
-  export TRANSMISSION_LOGGING=""
+  export TRANSMISSION_LOGGING_LEVEL=
   ;;
 esac
 
@@ -115,10 +115,9 @@ if [[ ! -e "/dev/random" ]]; then
 fi
 
 if [[ "true" = "${LOG_TO_STDOUT}" ]]; then
-  LOG="--logfile /dev/stdout"
-  #LOG=
+  LOG="/dev/stdout"
 else
-  LOG="--logfile ${TRANSMISSION_HOME}/transmission.log"
+  LOG="${TRANSMISSION_HOME}/transmission.log"
 fi
 
 if [[ -f /usr/local/bin/transmission-daemon ]]; then
@@ -127,8 +126,36 @@ else
   transbin='/usr/bin'
 fi
 
+# Raise the open-files limit (RLIMIT_NOFILE) for transmission-daemon.
+# transmission keeps one fd per peer (peer-limit-global, default 240) plus data,
+# resume and log files; the default 1024 soft limit causes intermittent
+# "Unable to save resume file: Too many open files" errors. The `su` below resets
+# the soft limit back to 1024 even when the hard limit is large, so the limit MUST
+# be raised inside the su shell.
+if [[ -z "${OPEN_FILES_LIMIT}" ]]; then
+  # Default to the hard limit, which the unprivileged RUN_AS user can reach without
+  # extra privileges. It may be reported as "unlimited", but transmission can't use
+  # an infinite nofile - the kernel caps it at fs.nr_open - so fall back to that.
+  OPEN_FILES_LIMIT="$(ulimit -Hn)"
+  if [[ "${OPEN_FILES_LIMIT}" == "unlimited" ]]; then
+    OPEN_FILES_LIMIT="$(cat /proc/sys/fs/nr_open 2>/dev/null || echo 1048576)"
+  fi
+fi
+echo "Setting transmission open-files (nofile) soft limit to ${OPEN_FILES_LIMIT}"
+
+
+# Build the transmission-daemon command as an array. It is run as RUN_AS via su,
+# which resets the nofile soft limit, so we raise it again inside the su shell.
+# ${transmission_cmd[*]@Q} safely quotes each argument for the `bash -c` string.
+transmission_cmd=("${transbin}/transmission-daemon")
+[[ 0 -lt ${#TRANSMISSION_LOGGING_LEVEL} ]] && transmission_cmd+=("--log-level=${TRANSMISSION_LOGGING_LEVEL}") || true
+transmission_cmd+=("-f" "-g" "${TRANSMISSION_HOME}" "--logfile" "${LOG}")
+
 log "STARTING TRANSMISSION $(${transbin}/transmission-remote -V 2>&1 | grep -oP "(?<=remote )[0-9.]+") with ${nordlynx_ip} mounted on ${vpn_itf}, container ip is ${container_ip}"
-su --preserve-environment ${RUN_AS} -s /bin/bash -c "${transbin}/transmission-daemon ${TRANSMISSION_LOG_LEVEL,,} -f -g ${TRANSMISSION_HOME} ${LOG}"
+echo "STARTING TRANSMISSION" "command line:" "${transmission_cmd[*]@Q}"
+
+#su --preserve-environment ${RUN_AS} -s /bin/bash -c "ulimit -n ${OPEN_FILES_LIMIT};${transbin}/transmission-daemon ${TRANSMISSION_LOG_LEVEL,,} -f -g ${TRANSMISSION_HOME} ${LOG}"
+su --preserve-environment ${RUN_AS} -s /bin/bash -c "ulimit -n ${OPEN_FILES_LIMIT}; exec ${transmission_cmd[*]@Q}" &
 
 #TODO execute post start.
 # If transmission-post-start.sh exists, run it

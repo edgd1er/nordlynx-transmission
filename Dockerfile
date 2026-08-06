@@ -38,7 +38,7 @@ ADD transmission_web_control_1.6.33.tar.xz /opt/transmission-ui/
 FROM $BASE_IMAGE AS os-base
 
 ARG aptcacher=''
-ARG VERSION=5.2.0
+ARG VERSION=5.3.0
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 ARG BASE_IMAGE
@@ -224,7 +224,8 @@ ENV GLOBAL_APPLY_PERMISSIONS=true \
     TINYUSER='' \
     TINYPASS='' \
     DANTE_LOGOUTPUT='stdout' \
-    TINYLOGOUTPUT='stdout'
+    TINYLOGOUTPUT='stdout' \
+    OPEN_FILES_LIMIT=''
 
 # Start supervisord as init system
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

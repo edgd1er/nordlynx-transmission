@@ -14,7 +14,7 @@ TBT_V3:=$(shell grep -oP '(?<=#TBT_VERSION: ).+' .github/workflows/check_version
 TWCV:=$(shell grep -oP '(?<=TWCV: ).+' .github/workflows/check_version.yml )
 TICV:=$(shell grep -oP '(?<=TICV: ).+' .github/workflows/check_version.yml )
 #BASE_IMAGE:= "debian:13-slim"
-BASE_IMAGE:= "ubuntu:24.04"
+BASE_IMAGE:= "ubuntu:26.04"
 
 # https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help: ## generate help list
