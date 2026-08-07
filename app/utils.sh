@@ -579,10 +579,10 @@ log() {
 }
 
 setTimeZone() {
-  [[ ${TZ} == $(cat /etc/timezone) ]] && return
+  [[ -f etc/timezone ]] && [[ ${TZ} == $(cat /etc/timezone) ]] && return
   log "INFO: Setting timezone to ${TZ}"
   ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime
-  dpkg-reconfigure -fnoninteractive tzdata
+  dpkg-reconfigure -f noninteractive tzdata
 }
 
 checkLatest() {

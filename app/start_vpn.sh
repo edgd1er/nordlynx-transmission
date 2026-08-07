@@ -138,3 +138,5 @@ log "INFO: TINYPROXY: starting"
 supervisorctl start tinyproxy
 
 supervisorctl start transmission
+
+echo "back to start_vpn.sh"
