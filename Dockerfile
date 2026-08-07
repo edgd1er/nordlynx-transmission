@@ -88,7 +88,7 @@ Enabled: yes" >/etc/apt/sources.list.d/debian-testing.sources \
     && if [[ 1 -eq ${NORDVPNCLIENT_INSTALLED} ]]; then \
     apt-get -o Dpkg::Options::="--force-confold" install --no-install-recommends -qqy \
     # nordvpn requirements \
-    iproute2 iptables readline-common dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client \
+    iproute2 nftables readline-common dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client \
     gpg-wks-server gpgconf gpgsm libksba8 libnpth0 libreadline8 libsqlite3-0 lsb-base pinentry-curses; fi \
     && wget -nv -t10 -O /tmp/nordrepo.deb "https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/n/nordvpn-release/nordvpn-release_1.0.0_all.deb" \
     && apt-get install -qqy --no-install-recommends /tmp/nordrepo.deb && apt-get update \
