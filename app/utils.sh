@@ -745,13 +745,18 @@ checkRights() {
 }
 
 checkServices() {
-  for s in nordvpnd dante tinyproxy transmission; do
+  for s in nordvpnd dante tinyproxy; do
     sta=$(supervisorctl status $s | grep -ic running)
     if [[ 0 -eq ${sta} ]]; then
       log "$s is stopped."
       return 1
     fi
   done
+  /usr/local/bin/transmission-remote $(getTransCreds) -si >/dev/null
+  if [[ 0 -ne $? ]]; then
+    log "transmission is stopped"
+    return 1
+  fi
   return 0
 }
 
