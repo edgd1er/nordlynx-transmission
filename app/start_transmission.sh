@@ -132,6 +132,13 @@ fi
 # "Unable to save resume file: Too many open files" errors. The `su` below resets
 # the soft limit back to 1024 even when the hard limit is large, so the limit MUST
 # be raised inside the su shell.
+# OPEN_FILES_LIMIT ends up interpolated into the `bash -c` string below, so refuse
+# anything that isn't a plain number and fall back to the default instead.
+if [[ -n "${OPEN_FILES_LIMIT}" && ! "${OPEN_FILES_LIMIT}" =~ ^[0-9]+$ ]]; then
+  echo "WARNING: OPEN_FILES_LIMIT '${OPEN_FILES_LIMIT}' is not a number, ignoring it."
+  OPEN_FILES_LIMIT=""
+fi
+
 if [[ -z "${OPEN_FILES_LIMIT}" ]]; then
   # Default to the hard limit, which the unprivileged RUN_AS user can reach without
   # extra privileges. It may be reported as "unlimited", but transmission can't use
@@ -155,7 +162,7 @@ log "STARTING TRANSMISSION $(${transbin}/transmission-remote -V 2>&1 | grep -oP 
 echo "STARTING TRANSMISSION" "command line:" "${transmission_cmd[*]@Q}"
 
 #su --preserve-environment ${RUN_AS} -s /bin/bash -c "ulimit -n ${OPEN_FILES_LIMIT};${transbin}/transmission-daemon ${TRANSMISSION_LOG_LEVEL,,} -f -g ${TRANSMISSION_HOME} ${LOG}"
-su --preserve-environment ${RUN_AS} -s /bin/bash -c "ulimit -n ${OPEN_FILES_LIMIT}; exec ${transmission_cmd[*]@Q}" &
+su --preserve-environment ${RUN_AS} -s /bin/bash -c "ulimit -S -n ${OPEN_FILES_LIMIT}; exec ${transmission_cmd[*]@Q}" &
 
 #TODO execute post start.
 # If transmission-post-start.sh exists, run it
