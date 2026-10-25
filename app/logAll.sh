@@ -10,7 +10,7 @@ installConfigure(){
   fi
 
   if [[ ! -f /etc/ulogd.conf ]]; then
-  echo "[global]
+    echo "[global]
         logfile=\"/var/log/ulogd.log\"
         stack=log1:NFLOG,base1:BASE,ifi1:IFINDEX,ip2str1:IP2STR,print1:PRINTPKT,emu1:LOGEMU
 
@@ -27,13 +27,18 @@ installConfigure(){
 
 #Main
 [[ 0 -eq ${IPTABLES_LOG:-0} ]] && exit
+
+echo """************
+** logALl **
+************"""
+
 installConfigure
 #INPUT chain
 #FORWARD chain
 #OUTPUT chain
 for c in INPUT FORWARD OUTPUT
 do
-  isPresent=$(iptables -L ${c} | grep -c nflog-prefix)
+  isPresent=$(iptables -L ${c} | grep -c nflog-prefix) || true
   if [[ 0 -eq ${isPresent} ]]; then
     iptables -I $c 1 -j NFLOG --nflog-prefix "[default-drop]:" --nflog-group 1
   fi
@@ -42,15 +47,16 @@ done
 #To log network activity in the NAT table execute the following commands for tracking activity in their respective chains
 for c in PREROUTING POSTROUTING OUTPUT
 do
-  isPresent=$(iptables -t nat -L ${c} | grep -c nflog-prefix)
+  isPresent=$(iptables -t nat -L ${c} | grep -c nflog-prefix) || true
   if [[ 0 -eq ${isPresent} ]]; then
     iptables -t nat -I $c 1 -j NFLOG --nflog-prefix "[default-drop]:" --nflog-group 1
   fi
 done
 
-echo <EOF >/etc/supervisor/conf.d/ulogd.conf
+if [[ ! -e /etc/supervisor/conf.d/ulogd.conf ]]; then
+  cat >/etc/supervisor/conf.d/ulogd.conf <<'EOF'
 [program:ulogd]
-command = /usr/sbin/ulogd -c /etc/danted.conf -v
+command = /usr/sbin/ulogd -c /etc/ulogd.conf -v
 user = root
 autostart = false
 autorestart = false
@@ -61,7 +67,10 @@ stdout_logfile_maxbytes = 0
 
 stderr_logfile_maxbytes = 0
 stdout_logfile_backups = 0
-stderr_logfile_backups = 0"
+stderr_logfile_backups = 0
 EOF
 
-supervist
+fi
+supervisorctl reread
+supervisorctl add ulogd
+supervisorctl start ulogd

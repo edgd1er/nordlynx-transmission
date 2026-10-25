@@ -19,7 +19,7 @@ CACHE=""
 WHERE="--load"
 #TBT_VERSION=3.00
 #TBT_VERSION=4.0.6 #old bookworm
-TBT_VERSION=4.1.3
+TBT_VERSION=4.1.4
 #TBT_VERSION=dev # 4.2.x
 NODEVERSION=24
 DEB=1 # 0=from repo, 1=from .deb
@@ -57,7 +57,7 @@ case "${TBT_VERSION}" in
   dev)
     TAG="${DUSER}/${IMAGE}:dev"
     ;;
-  4.1.2|4.1.3)
+  4.1.2|4.1.3|4.1.4)
     TAG="${DUSER}/${IMAGE}:v4"
     ;;
   4.2.0)

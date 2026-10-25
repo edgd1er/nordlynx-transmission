@@ -65,6 +65,7 @@ areProxiesPortOpened() {
 }
 
 testProxies() {
+  echo "***** testProxies *****"
   FAILED=0
   if [[ -n $(which nc) ]]; then
     areProxiesPortOpened
@@ -123,7 +124,8 @@ testProxies() {
 }
 
 getInterfacesInfo() {
-  docker compose exec ${SERVICE} bash -c "nordvpn version"
+  echo "***** getInterfacesInfo *****"
+  docker compose exec ${SERVICE} bash -c "nordvpn -v"
   docker compose exec ${SERVICE} bash -c "ip -j a |jq  '.[]|select(.ifname|test(\"wg0|tun|nordlynx\"))|.ifname'"
   itf=$(docker compose -f ${CPSEFILE} exec ${SERVICE} ip -j a)
   echo eth0:$(echo $itf | jq -r '.[] |select(.ifname=="eth0")| .addr_info[].local')
@@ -134,10 +136,15 @@ getInterfacesInfo() {
 }
 
 getAliasesOutput() {
-  docker compose -f ${CPSEFILE} exec ${SERVICE} bash -c 'while read -r line; do echo $line;eval $line;done <<<$(grep ^alias ~/.bashrc | cut -f 2 -d"'"'"'")'
+  echo "***** getAliasesOutput *****"
+  docker compose -f ${CPSEFILE} exec ${SERVICE} bash -c 'source /root/.bash_aliases;
+   shopt -s expand_aliases;
+   printf "HOME=%s\n" "$HOME";
+   while IFS= read -r line; do echo "***** $line ******";eval $line;done < <(grep -oP "^alias \K[cgd][^=]+" ${HOME}/.bash_aliases)'
 }
 
 getTransWebPage() {
+  echo "***** getTransWebPage *****"
   transcreds=""
   if [[ -e rpc_creds ]]; then
     transcreds="$(sed -n '1p' ./rpc_creds):$(sed -n '2p' ./rpc_creds)@"
@@ -146,7 +153,7 @@ getTransWebPage() {
 }
 
 checkOuput() {
-  TINY_OUT=$(grep -oP '(?<=\- TINYLOGOUTPUT=)[^ ]+' ${CPSEFILE}) || TINY_OUT="stdout"
+  TINY_OUT=$(grep -oP '(?<=\- TINY_LOGOUTPUT=)[^ ]+' ${CPSEFILE}) || TINY_OUT="stdout"
   DANTE_OUT=$(grep -oP '(?<=\- DANTE_LOGOUTPUT=)[^ ]+' ${CPSEFILE}) || DANTE_OUT="stdout"
   DANTE_RES=$(docker compose -f ${CPSEFILE} exec ${SERVICE} grep -oP "(?<=^logoutput: ).+" /etc/danted.conf 2>/dev/null || true)
   DANTE_RES=${DANTE_RES:-'stdout'}

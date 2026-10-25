@@ -91,7 +91,7 @@ jobs:
           echo "tagos=debian">> $GITHUB_ENV
 
       - name: checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           lfs: true
       - name: Set up QEMU
@@ -121,19 +121,19 @@ jobs:
       # type=raw,enable=true,priority=200,prefix=,suffix=,value=
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: |
             ${{ secrets.DOCKER_USER }}/${{ env.IMAGE }}
           labels: |
             org.opencontainers.image.created={{commit_date 'YYYY-MM-DDTHH:mm:ss.SSS[Z]'}}
           tags: |
+            type=raw,enable=true,priority=200,prefix=,suffix=,value=${{ inputs.version }}-${{ env.tagos }}        
             type=raw,enable=true,priority=200,prefix=,suffix=,value=${{ inputs.tag }}-${{ env.tagos }}        
-            type=raw,enable=true,priority=200,prefix=,suffix=,value=latest-${{ env.tagos }}        
             type=raw,enable=${{ contains(inputs.base_image,'debian') }},priority=200,prefix=,suffix=,value=latest
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: ${{ inputs.build-context }}

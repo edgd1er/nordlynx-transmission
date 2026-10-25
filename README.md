@@ -8,10 +8,11 @@
 
 # nordlynx-transmission
 
-[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_5.4.1_amd64.changelog): 5.4.1 (2026/10/13)
+[Nordvpn client's version](https://nordvpn.com/fr/blog/nordvpn-linux-release-notes/) or [changelog](https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_6.0.1_amd64.changelog): 6.0.1 (2026/10/13)
 
 Ubuntu based images do not require **privileged** mode, debian based images do.
 
+* 2026/10/24: transmission 4.1.4 by default.
 * 2026/07/03: transmission 4.1.3 by default.
 * 2026/06/04: transmission 4.1.2 by default. Moving from noble to resolute.
 * 2026/02/25: transmission 4.1.1 by default.
@@ -85,7 +86,7 @@ sysclts:
   might be needed,  if nordvpn cannot change the settings itself.
 
 * ANALYTICS: [off/0/false, on/1/true], default on, send anonymous aggregate data: crash reports, OS version, marketing performance, and feature usage data
-* TECHNOLOGY: [NordLynx](https://support.nordvpn.com/hc/en-us/articles/19564565879441-What-is-NordLynx)/[OpenVPN](https://support.nordvpn.com/hc/en-us/articles/19683395.4.161-OpenVPN-connection-on-NordVPN)/[nordwhisper](https://nordvpn.com/blog/nordwhisper-protocol/), default: NordLynx (wireguard like)
+* TECHNOLOGY: [NordLynx](https://support.nordvpn.com/hc/en-us/articles/19564565879441-What-is-NordLynx)/[OpenVPN](https://support.nordvpn.com/hc/en-us/articles/19683396.0.161-OpenVPN-connection-on-NordVPN)/[nordwhisper](https://nordvpn.com/blog/nordwhisper-protocol/), default: NordLynx (wireguard like)
 * PROTOCOL=tcp # or udp (default), useful only when using openvpn. wireguard is udp only.
 * [OBFUSCATE](https://nordvpn.com/features/obfuscated-servers/): [off/on], default off, on hide vpn's use.
 * CONNECT = [country]/[server]/[country_code]/[city] or [country] [city],  if none provide you will connect to the recommended server.
@@ -108,7 +109,7 @@ sysclts:
 * TINYUSER= #optional, enforces authentication over tinyproxy when set with TINYPASS, add authorization with danteuser:${TINYPASS} to socks proxy
 * TINYPASS= #optional, enforces authentication over tinyproxy when set with TINYUSER.
 * DANTE_LOGOUTPUT=file # stdout or file (>/config/log/dante.log)
-* TINYLOGOUTPUT=file # stdout or file (>/config/log/tinyproxy.log)
+* TINY_LOGOUTPUT=file # stdout or file (>/config/log/tinyproxy.log)
 * LOG_TO_STDOUT= (true/false) # write transmission logs to stdout or transmission.log 
 
 

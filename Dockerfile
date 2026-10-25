@@ -2,7 +2,7 @@
 #ARG BASE_IMAGE=debian:13-slim
 ARG BASE_IMAGE=ubuntu:24.04
 
-FROM --platform=$BUILDPLATFORM alpine:3.23 AS TransmissionUIs
+FROM --platform=$BUILDPLATFORM alpine:3.24 AS TransmissionUIs
 ARG TWCV="1.6.33"
 ARG TICV="1.8.0"
 ARG FLOODVER="1.0.1"
@@ -38,7 +38,7 @@ ADD transmission_web_control_1.6.33.tar.xz /opt/transmission-ui/
 FROM $BASE_IMAGE AS os-base
 
 ARG aptcacher=''
-ARG VERSION=5.4.1
+ARG VERSION=6.0.1
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 ARG BASE_IMAGE
@@ -110,7 +110,7 @@ FROM os-base AS new
 
 ARG aptcacher=''
 ARG DEBIAN_FRONTEND=noninteractive
-ARG TBT_VERSION=4.1.3
+ARG TBT_VERSION=4.1.4
 ARG TARGETPLATFORM
 ARG BASE_IMAGE
 ARG DEB=0
@@ -149,15 +149,15 @@ RUN echo "cpu: ${TARGETPLATFORM}, os: ${BASE_IMAGE}, version: tbt: ${TBT_VERSION
     && ln -s /usr/local/share/transmission/public_html/transmission-app.js /opt/transmission-ui/transmission-web-control/transmission-app.js \
     && ln -s /usr/local/share/transmission/public_html/index.html /opt/transmission-ui/transmission-web-control/index.original.html \
     ; fi ;fi ; \
-    echo "alias checkip='curl -sm 10 \"https://zx2c4.com/ip\";echo'" | tee -a ~/.bashrc \
-    && echo "alias checkhttp='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"\$(head -1 \${TCF}):\$(tail -1 \${TCF})@\" || TCREDS=\"\";curl -4 -sm 10 -x http://\${TCREDS}\${HOSTNAME}:\${WEBPROXY_PORT:-8888} \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
-    && echo "alias checksocks='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"\$(head -1 \${TCF}):\$(tail -1 \${TCF})@\" || TCREDS=\"\";curl -4 -sm 10 -x socks5h://\${TCREDS}\${HOSTNAME}:1080 \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bashrc \
-    && echo "alias checkvpn='nordvpn status | grep -oP \"(?<=Status: ).*\"'" | tee -a ~/.bashrc \
-    && echo "alias gettiny='grep -vP \"(^$|^#)\" /etc/tinyproxy/tinyproxy.conf'" | tee -a ~/.bashrc \
-    && echo "alias getdante='grep -vP \"(^$|^#)\" /etc/danted.conf'" | tee -a ~/.bashrc \
-    && echo "alias dltest='curl http://appliwave.testdebit.info/100M.iso -o /dev/null'" | tee -a ~/.bashrc \
-    && echo "function getversion(){ apt-get update && apt-get install -y --allow-downgrades nordvpn=\${1:-3.16.9} && supervisorctl start start_vpn; }" | tee -a ~/.bashrc \
-    && echo "function showversion(){ apt-cache show nordvpn |grep -oP '(?<=Version: ).+' | sort | awk 'NR==1 {first = \$0} END {print first\" - \"\$0; }'; }" | tee -a ~/.bashrc \
+    echo "alias checkip='curl -sm 10 \"https://zx2c4.com/ip\";echo'" | tee -a ~/.bash_aliases \
+    && echo "alias checkhttp='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"\$(head -1 \${TCF}):\$(tail -1 \${TCF})@\" || TCREDS=\"\";curl -4 -sm 10 -x http://\${TCREDS}\${HOSTNAME}:\${WEBPROXY_PORT:-8888} \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bash_aliases \
+    && echo "alias checksocks='TCF=/run/secrets/TINY_CREDS; [[ -f \${TCF} ]] && TCREDS=\"\$(head -1 \${TCF}):\$(tail -1 \${TCF})@\" || TCREDS=\"\";curl -4 -sm 10 -x socks5h://\${TCREDS}\${HOSTNAME}:1080 \"https://ifconfig.me/ip\";echo'" | tee -a ~/.bash_aliases \
+    && echo "alias checkvpn='nordvpn status | grep -oP \"(?<=Status: ).*\"'" | tee -a ~/.bash_aliases \
+    && echo "alias gettiny='grep -vP \"(^$|^#)\" /etc/tinyproxy/tinyproxy.conf'" | tee -a ~/.bash_aliases \
+    && echo "alias getdante='grep -vP \"(^$|^#)\" /etc/danted.conf'" | tee -a ~/.bash_aliases \
+    && echo "alias dltest='curl http://appliwave.testdebit.info/100M.iso -o /dev/null'" | tee -a ~/.bash_aliases \
+    && echo "function getversion(){ apt-get update && apt-get install -y --allow-downgrades nordvpn=\${1:-3.16.9} && supervisorctl start start_vpn; }" | tee -a ~/.bash_aliases \
+    && echo "function showversion(){ apt-cache show nordvpn |grep -oP '(?<=Version: ).+' | sort | awk 'NR==1 {first = \$0} END {print first\" - \"\$0; }'; }" | tee -a ~/.bash_aliases \
     ; rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/* /tmp/*
 
 COPY --chmod=755 etc/ /etc/
@@ -224,7 +224,7 @@ ENV GLOBAL_APPLY_PERMISSIONS=true \
     TINYUSER='' \
     TINYPASS='' \
     DANTE_LOGOUTPUT='stdout' \
-    TINYLOGOUTPUT='stdout' \
+    TINY_LOGOUTPUT='stdout' \
     OPEN_FILES_LIMIT=''
 
 # Start supervisord as init system

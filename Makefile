@@ -52,8 +52,7 @@ check:	## check versions
 	echo "remote version: $${rversion}" ;\
 	if [[ $${lversion} != $${rversion} ]]; then sed -i -E "s/ VERSION:.*/ VERSION: $${rversion}/" compose.yml ; \
 	sed -i -E "s/ VERSION=.*/ VERSION=$${rversion}/" Dockerfile ; fi ; \
-	grep -E ' VERSION[:=].+' Dockerfile compose.yml ; \
-	echo "transmission version: ${TBT_V4}" ; \
+	grep -oP '(?<= VERSION[:=]).+' Dockerfile compose.yml ; \
 	sed -i -E "s/ARG TBT_VERSION=.*/ARG TBT_VERSION=${TBT_V4}/" Dockerfile;\
 	echo "transmission web control version: ${TWCV}" ; \
 	sed -i -E "s/ verWC=.*/ verWC=${TWCV}/" Dockerfile;\
@@ -62,7 +61,7 @@ check:	## check versions
 	sed -i -E "s/ nversion: \".*/ nversion: \"$${rversion}\"/" .github/workflows/build3_4.yml; \
 	sed -i -E "s/$${lversion}/$${rversion}/g" README.md; \
 	tver=$$(curl -s "https://api.github.com/repos/transmission/transmission/releases/latest" | jq -r .tag_name) && \
-	echo "Transmission: ${TBT_V4} / $${tver}"
+	echo "Transmission: ${TBT_V4} / GH: $${tver}"
 run:
 	@echo "run container"
 	docker-compose up

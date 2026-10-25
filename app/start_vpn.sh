@@ -1,10 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
+shopt -s nocasematch
 
 #Vars
 [[ -f /app/utils.sh ]] && source /app/utils.sh || true
-[[ ${NORDVPN_DEBUG:-false} == "true" ]] && set -x || true
+if [[ ${DEBUG:-0} =~ (1|true|on) ]]; then
+  set -x
+fi
 TSEC=5
 RDIR=/run/nordvpn/
 ANALYTICS=${ANALYTICS:-off}
@@ -19,16 +22,6 @@ CONNECT=${CONNECT// /_}
 
 
 #Functions
-set_iptables() {
-  action=${1:-'DROP'}
-  log "INFO: setting iptables policy to ${action}"
-  iptables -F
-  iptables -X
-  iptables -P INPUT ${action}
-  iptables -P FORWARD ${action}
-  iptables -P OUTPUT ${action}
-}
-
 setIPV6() {
   if [[ 0 -eq $(grep -c "net.ipv6.conf.all.disable_ipv6" /etc/sysctl.conf) ]]; then
     echo "net.ipv6.conf.all.disable_ipv6 = ${1}" >/etc/sysctl.conf
@@ -41,44 +34,45 @@ setIPV6() {
 #embedded in nordvpn client but not efficient in container. done in docker-compose
 #setIPV6 ${NOIPV6}
 
-mkTun() {
-  # Create a tun device see: https://www.kernel.org/doc/Documentation/networking/tuntap.txt
-  if [ ! -c /dev/net/tun ]; then
-    log "INFO: OVPN: Creating tun interface /dev/net/tun"
-    mkdir -p /dev/net
-    mknod /dev/net/tun c 10 200
-    chmod 600 /dev/net/tun
-  fi
-}
-
 #Main
+[[ ! -d ${RDIR} ]] && mkdir -p ${RDIR}
+
+isnordvpn6plus
 #Overwrite docker dns as it may fail with specific configuration (dns on server)
 chattr -i /etc/resolv.conf
 echo "nameserver 1.1.1.1" >/etc/resolv.conf
 
 setTimeZone
+
+#stop killswitch that disable communication when no vpn is up
 allow_traffic_before_vpn
 
 # checkLatest commented as no more updated
 checkLatestApt
-installedRequiredNordVpnClient
+if [[ -n ${NORDVPN_VERSION} ]]; then
+  installedRequiredNordVpnClient
+else
+  log "INFO: NORDVPN: no required version specified, using installed version"
+fi
 
-#Define if not defined
-TECHNOLOGY=${TECHNOLOGY:-'nordlynx'}
-OBFUSCATE=${OBFUSCATE:-'off'}
+#log all if required: IPTABLES_LOG=1
+if [[ -f /app/logAll.sh ]]; then
+  /app/logAll.sh
+else
+  log "INFO: logall feature not available
+  "
+fi
+
+#make /dev/tun if missing
+#[[ ${TECHNOLOGY} =~ nordlynx ]] && mkTun || true
+mkTun
 
 #if running stop it.
 stop_transmission
 
-#stop killswitch that disable communication when no vpn is up
-if [ 1 -le $(pgrep -c nordvpnd) ]; then
-  nordvpn s killswitch off
-fi
+#exit if required vars are missing
+[[ -z ${CONNECT:-''} ]] && exit 1
 
-[[ -z ${CONNECT} ]] && exit 1
-[[ ! -d ${RDIR} ]] && mkdir -p ${RDIR}
-
-mkTun
 UNP_IP=$(getCurrentWanIp)
 # May be useful for Synology when iptables-nft has problems.
 if [[ ${IPTABLES_LEGACY^^} != "N" ]]; then
