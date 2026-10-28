@@ -9,10 +9,10 @@ DOCKERLIB=$(grep -oP "(?<=data-root\": \")[^\"]+" /etc/docker/daemon.json)
 
 #HTTP_PORT=28$(grep -oP '(?<=\- "28)[^:]+' ${CPSEFILE})
 #SOCK_PORT=20$(grep -oP '(?<=\- "20)[^:]+' ${CPSEFILE})
-HTTP_PORT=$(grep -oP "[0-9]{4}(?=:[0-9]{4}\" #http)" ${CPSEFILE})
-SOCK_PORT=$(grep -oP "[0-9]{4}(?=:[0-9]{4}\" #socks)" ${CPSEFILE})
+HTTP_PORT=$(grep -oP "28[0-9]{2}(?=:[0-9]{4})" ${CPSEFILE})
+SOCK_PORT=$(grep -oP "20[0-9]{2}(?=:[0-9]{4})" ${CPSEFILE})
 SERVICE=$(sed -n '/services:/{n;p}' ${CPSEFILE} | grep -oP '\w+')
-TRANS_PORT=9091
+TRANS_PORT=$(grep -oP "90[0-9]{2}(?=:[0-9]{4})" ${CPSEFILE})
 #Common
 FAILED=0
 INTERVAL=4
@@ -37,7 +37,7 @@ buildAndWait() {
   echo "Building and starting image"
   docker compose -f ${CPSEFILE} up -d ${bb}
 
-  docker compose -f ${CPSEFILE} exec ${SERVICE} rm /var/log/{tinyproxy,dante}.log || true
+  docker compose -f ${CPSEFILE} exec ${SERVICE} rm -f ${DANTELOG} ${TINYLOG} || true
   echo "Waiting for the container to be up.(every ${INTERVAL} sec)"
   logs=""
   while [ 0 -eq $(echo $logs | grep -c "exited: start_vpn (exit status 0; expected") ]; do
@@ -88,26 +88,13 @@ testProxies() {
     TCREDS=""
     DCREDS=""
   fi
+
+  #check detected ips by socks
   declare -i try
   try=0
   vpnIP=
   while [[ -z $vpnIP ]] && [[ try -lt 3 ]]; do
-    vpnIP=$(curl -4m5 -sx http://${TCREDS}${PROXY_HOST}:${HTTP_PORT} "https://ifconfig.me/ip")
-    try+=1
-  done
-  if [[ $? -eq 0 ]] && [[ ${myIp} != "${vpnIP}" ]] && [[ ${#vpnIP} -gt 0 ]]; then
-    echo "http proxy: IP is ${vpnIP}, mine is ${myIp}"
-  else
-    echo "Error, curl through http proxy to https://ifconfig.me/ip failed"
-    echo "or IP (${myIp}) == vpnIP (${vpnIP})"
-    (( FAILED += 1 ))
-  fi
-
-  #check detected ips
-  try=0
-  vpnIP=
-  while [[ -z $vpnIP ]] && [[ try -lt 3 ]]; do
-    vpnIP=$(curl -4m5 -sx socks5h://${DCREDS}${PROXY_HOST}:${SOCK_PORT} "https://ifconfig.me/ip") || true
+    vpnIP=$(curl -4m3 -sx socks5h://${DCREDS}${PROXY_HOST}:${SOCK_PORT} "https://ifconfig.me/ip") || true
     try+=1
   done
   if [[ $? -eq 0 ]] && [[ ${myIp} != "${vpnIP}" ]] && [[ ${#vpnIP} -gt 0 ]]; then
@@ -117,6 +104,21 @@ testProxies() {
     echo "Error, curl through socks proxy to http://ipv4.lafibre.info/ip.php failed"
     echo "or IP (${myIp}) == vpnIP (${vpnIP})"
     (( FAILED += 1))
+  fi
+
+  #check detected ips by socks
+  try=0
+  vpnIP=
+  while [[ -z $vpnIP ]] && [[ ${try} -lt 3 ]]; do
+    vpnIP=$(curl -4m3 -sx http://${TCREDS}${PROXY_HOST}:${HTTP_PORT} "https://ifconfig.me/ip") || true
+    try+=1
+  done
+  if [[ $? -eq 0 ]] && [[ ${myIp} != "${vpnIP}" ]] && [[ ${#vpnIP} -gt 0 ]]; then
+    echo "http proxy: IP is ${vpnIP}, mine is ${myIp}"
+  else
+    echo "Error, curl through http proxy to https://ifconfig.me/ip failed"
+    echo "or IP (${myIp}) == vpnIP (${vpnIP})"
+    (( FAILED += 1 ))
   fi
 
   echo "# failed tests: ${FAILED}"
@@ -180,7 +182,7 @@ checkOuput() {
       echo "OK, $DANTELOG not found as expected. DANTE config: ${DANTE_RES}"
     fi
   fi
-  #tinyproxylog check
+  #tinyproxy log check
   if [[ ${TINY_OUT} =~ file ]]; then
     t=$(($(date +%s) - $(docker compose -f ${CPSEFILE} exec ${SERVICE} date +%s -r ${TINYLOG})))
     if [[ ${TINY_RES} == stdout ]] || [[ 10000 -lt ${t} ]]; then
