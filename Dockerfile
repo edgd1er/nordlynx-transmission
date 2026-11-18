@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.3
 #ARG BASE_IMAGE=debian:13-slim
-ARG BASE_IMAGE=ubuntu:24.04
+ARG BASE_IMAGE=ubuntu:26.04
 
 FROM --platform=$BUILDPLATFORM alpine:3.24 AS TransmissionUIs
 ARG TWCV="1.6.33"
@@ -38,7 +38,7 @@ ADD transmission_web_control_1.6.33.tar.xz /opt/transmission-ui/
 FROM $BASE_IMAGE AS os-base
 
 ARG aptcacher=''
-ARG VERSION=6.0.2
+ARG VERSION=6.1.0
 ARG TZ=UTC/Etc
 ARG NORDVPNCLIENT_INSTALLED=1
 ARG BASE_IMAGE
